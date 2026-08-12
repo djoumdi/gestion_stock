@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+
+{% block title %}Tableau de bord - TechStock{% endblock %}
+
+{% block content %}
+<div class="mb-lg">
+    <h2 class="text-3xl font-bold text-on-surface">Tableau de bord</h2>
+    <p class="text-secondary mt-1">Aperçu de l'activité du magasin</p>
+</div>
+
+<!-- KPIs -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-md mb-lg">
+    <div class="bg-surface-container-lowest p-md rounded-xl border border-outline-variant shadow-sm">
+        <div class="w-10 h-10 rounded bg-primary-container/20 flex items-center justify-center text-primary mb-3">
+            <span class="material-symbols-outlined">payments</span>
+        </div>
+        <h3 class="text-xs font-semibold text-secondary uppercase tracking-wider mb-1">Ventes aujourd'hui</h3>
+        <span class="text-2xl font-bold text-on-surface font-mono">{{ total_ventes_jour }} FCFA</span>
+    </div>
+
+    <div class="bg-surface-container-lowest p-md rounded-xl border border-outline-variant shadow-sm">
+        <div class="w-10 h-10 rounded bg-primary-container/20 flex items-center justify-center text-primary mb-3">
+            <span class="material-symbols-outlined">inventory_2</span>
+        </div>
+        <h3 class="text-xs font-semibold text-secondary uppercase tracking-wider mb-1">Valeur du stock</h3>
+        <span class="text-2xl font-bold text-on-surface font-mono">{{ valeur_stock }} FCFA</span>
+    </div>
+
+    <div class="bg-surface-container-lowest p-md rounded-xl border border-outline-variant shadow-sm">
+        <div class="w-10 h-10 rounded bg-[#FEF3C7] flex items-center justify-center text-[#92400E] mb-3">
+            <span class="material-symbols-outlined">warning</span>
+        </div>
+        <h3 class="text-xs font-semibold text-secondary uppercase tracking-wider mb-1">Produits en alerte</h3>
+        <span class="text-2xl font-bold text-on-surface">{{ produits_en_alerte|length }}</span>
+    </div>
+
+    <div class="bg-surface-container-lowest p-md rounded-xl border border-outline-variant shadow-sm">
+        <div class="w-10 h-10 rounded bg-primary-container/20 flex items-center justify-center text-primary mb-3">
+            <span class="material-symbols-outlined">point_of_sale</span>
+        </div>
+        <h3 class="text-xs font-semibold text-secondary uppercase tracking-wider mb-1">Ventes ce mois</h3>
+        <span class="text-2xl font-bold text-on-surface">{{ nb_ventes_mois }}</span>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-lg mb-lg">
+    <!-- Graphique -->
+    <div class="lg:col-span-2 bg-surface-container-lowest p-lg rounded-xl border border-outline-variant shadow-sm">
+        <h3 class="text-lg font-bold mb-md">Ventes des 7 derniers jours</h3>
+        <div class="h-64">
+            <canvas id="ventesChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Produits en alerte -->
+    <div class="bg-surface-container-lowest p-lg rounded-xl border border-outline-variant shadow-sm">
+        <h3 class="text-lg font-bold mb-md">Stock faible</h3>
+        <div class="space-y-2">
+            {% for produit in produits_en_alerte %}
+            <a href="{% url 'stock:detail_produit' produit.pk %}" class="flex justify-between items-center py-2 border-b border-outline-variant last:border-0 hover:text-primary transition-colors">
+                <span class="text-sm font-semibold">{{ produit.nom }}</span>
+                <span class="text-xs font-bold px-2 py-1 rounded-full {% if produit.quantite_stock == 0 %}bg-[#FEE2E2] text-[#991B1B]{% else %}bg-[#FEF3C7] text-[#92400E]{% endif %}">{{ produit.quantite_stock }}</span>
+            </a>
+            {% empty %}
+            <p class="text-sm text-secondary">Aucun produit en alerte</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Dernières ventes -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant overflow-hidden">
+    <div class="p-lg border-b border-outline-variant">
+        <h3 class="text-lg font-bold">Dernières ventes</h3>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-surface-container-low border-b border-outline-variant">
+                    <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider">N°</th>
+                    <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider">Client</th>
+                    <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider">Date</th>
+                    <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider text-right">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for vente in dernieres_ventes %}
+                <tr onclick="window.location='{% url 'stock:detail_vente' vente.pk %}'" class="cursor-pointer border-b border-outline-variant hover:bg-surface-container-low transition-colors last:border-0">
+                    <td class="py-3 px-md font-mono text-secondary">#{{ vente.id }}</td>
+                    <td class="py-3 px-md font-semibold text-on-surface">{{ vente.client|default:"Client anonyme" }}</td>
+                    <td class="py-3 px-md text-on-surface-variant">{{ vente.date_vente|date:"d/m/Y H:i" }}</td>
+                    <td class="py-3 px-md text-right font-mono font-bold text-on-surface">{{ vente.total }} FCFA</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="py-6 px-md text-center text-secondary">Aucune vente pour le moment</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const ctx = document.getElementById('ventesChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: {{ labels_jours|safe }},
+            datasets: [{
+                label: 'Ventes (FCFA)',
+                data: {{ totaux_jours|safe }},
+                borderColor: '#2563eb',
+                backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                borderWidth: 2,
+                tension: 0.4,
+                fill: true,
+                pointBackgroundColor: '#ffffff',
+                pointBorderColor: '#2563eb',
+                pointBorderWidth: 2,
+                pointRadius: 4,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, grid: { color: '#e1e3e4' } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+</script>
+{% endblock %}

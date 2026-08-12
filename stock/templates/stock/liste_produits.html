@@ -1,0 +1,103 @@
+<!-- stock/templates/stock/liste_produits.html -->
+{% extends 'base.html' %}
+
+{% block title %}Produits - TechStock{% endblock %}
+
+{% block content %}
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-md gap-sm">
+    <div>
+        <h2 class="text-3xl font-bold text-on-surface">Produits</h2>
+        <p class="text-secondary mt-1">Gérez votre catalogue d'inventaire</p>
+    </div>
+    <a href="{% url 'stock:ajouter_produit' %}" class="bg-primary-container text-on-primary-container font-semibold py-2 px-md rounded-lg flex items-center hover:bg-primary hover:text-white transition-colors shadow-sm">
+        <span class="material-symbols-outlined text-[18px] mr-1">add</span> Ajouter un produit
+    </a>
+</div>
+
+<!-- Top bar de filtres par catégorie -->
+<div id="filtre-categories" class="flex flex-wrap gap-2 mb-lg">
+    <button type="button" onclick="filtrerCategorie('tous', this)"
+            class="filtre-btn px-4 py-2 rounded-full text-sm font-semibold bg-primary text-white transition-colors">
+        Tous
+    </button>
+    {% for categorie in categories %}
+    <button type="button" onclick="filtrerCategorie('{{ categorie.id }}', this)"
+            class="filtre-btn px-4 py-2 rounded-full text-sm font-semibold bg-surface-container-lowest border border-outline-variant text-on-surface-variant hover:bg-surface-container-low transition-colors">
+        {{ categorie.nom }}
+    </button>
+    {% endfor %}
+</div>
+
+<div class="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-surface-container-low border-b border-outline-variant">
+                    <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider">Image</th>
+                    <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider">Nom</th>
+                    <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider">Marque</th>
+                    <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider">Catégorie</th>
+                    <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider text-right">Prix</th>
+                    <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider text-right">Stock</th>
+                </tr>
+            </thead>
+            <tbody id="corps-tableau-produits">
+                {% for produit in produits %}
+                <tr onclick="window.location='{% url 'stock:detail_produit' produit.pk %}'"
+                    data-categorie="{{ produit.categorie_id|default:'0' }}"
+                    class="ligne-produit cursor-pointer border-b border-outline-variant hover:bg-surface-container-low transition-colors">
+                    <td class="py-3 px-md">
+                        {% if produit.image %}
+                        <img src="{{ produit.image.url }}" alt="{{ produit.nom }}" class="w-12 h-12 rounded-lg object-cover border border-outline-variant">
+                        {% else %}
+                        <div class="w-12 h-12 rounded-lg bg-surface flex items-center justify-center border border-outline-variant">
+                            <span class="material-symbols-outlined text-outline">image</span>
+                        </div>
+                        {% endif %}
+                    </td>
+                    <td class="py-3 px-md font-semibold text-on-surface">{{ produit.nom }}</td>
+                    <td class="py-3 px-md text-on-surface-variant">{{ produit.marque|default:"—" }}</td>
+                    <td class="py-3 px-md text-on-surface-variant">{{ produit.categorie|default:"—" }}</td>
+                    <td class="py-3 px-md text-right font-mono text-on-surface">{{ produit.prix_vente }} FCFA</td>
+                    <td class="py-3 px-md text-right">
+                        {% if produit.quantite_stock == 0 %}
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-[#FEE2E2] text-[#991B1B]">{{ produit.quantite_stock }}</span>
+                        {% elif produit.en_alerte %}
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-[#FEF3C7] text-[#92400E]">{{ produit.quantite_stock }}</span>
+                        {% else %}
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-[#D1FAE5] text-[#065F46]">{{ produit.quantite_stock }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="py-6 px-md text-center text-secondary">Aucun produit pour le moment</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <p id="message-vide" class="hidden py-6 px-md text-center text-secondary">Aucun produit dans cette catégorie</p>
+    </div>
+</div>
+
+<script>
+    function filtrerCategorie(categorieId, boutonClique) {
+        // Style actif/inactif sur les boutons
+        document.querySelectorAll('.filtre-btn').forEach(btn => {
+            btn.classList.remove('bg-primary', 'text-white');
+            btn.classList.add('bg-surface-container-lowest', 'border', 'border-outline-variant', 'text-on-surface-variant');
+        });
+        boutonClique.classList.add('bg-primary', 'text-white');
+        boutonClique.classList.remove('bg-surface-container-lowest', 'border', 'border-outline-variant', 'text-on-surface-variant');
+
+        // Filtrage des lignes
+        const lignes = document.querySelectorAll('.ligne-produit');
+        let visibles = 0;
+        lignes.forEach(ligne => {
+            const correspond = (categorieId === 'tous' || ligne.dataset.categorie === categorieId);
+            ligne.style.display = correspond ? '' : 'none';
+            if (correspond) visibles++;
+        });
+
+        document.getElementById('message-vide').classList.toggle('hidden', visibles > 0);
+    }
+</script>
+{% endblock %}

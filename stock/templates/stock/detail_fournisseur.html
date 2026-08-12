@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ fournisseur.nom }} - TechStock{% endblock %}
+
+{% block content %}
+<div class="mb-lg">
+    <div class="text-sm text-secondary flex items-center gap-1 mb-1">
+        <a class="hover:text-primary transition-colors" href="{% url 'stock:liste_fournisseurs' %}">Fournisseurs</a>
+        <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+        <span class="text-on-surface font-semibold">{{ fournisseur.nom }}</span>
+    </div>
+    <h2 class="text-3xl font-bold text-on-surface">{{ fournisseur.nom }}</h2>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-lg">
+
+    <!-- Colonne gauche : formulaire d'édition -->
+    <div class="lg:col-span-1">
+        <form method="POST" class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg shadow-sm">
+            {% csrf_token %}
+            <h3 class="text-lg font-bold mb-md">Informations</h3>
+
+            <div class="mb-lg">
+                <label class="block text-xs font-semibold text-secondary mb-1">Nom</label>
+                <input name="nom" class="w-full bg-surface border border-outline-variant rounded p-2 focus:border-primary outline-none" type="text" value="{{ fournisseur.nom }}" required>
+            </div>
+            <div class="mb-lg">
+                <label class="block text-xs font-semibold text-secondary mb-1">Téléphone</label>
+                <input name="telephone" class="w-full bg-surface border border-outline-variant rounded p-2 focus:border-primary outline-none" type="text" value="{{ fournisseur.telephone }}">
+            </div>
+            <div class="mb-lg">
+                <label class="block text-xs font-semibold text-secondary mb-1">Email</label>
+                <input name="email" class="w-full bg-surface border border-outline-variant rounded p-2 focus:border-primary outline-none" type="email" value="{{ fournisseur.email }}">
+            </div>
+            <div class="mb-lg">
+                <label class="block text-xs font-semibold text-secondary mb-1">Adresse</label>
+                <input name="adresse" class="w-full bg-surface border border-outline-variant rounded p-2 focus:border-primary outline-none" type="text" value="{{ fournisseur.adresse }}">
+            </div>
+            <div class="mb-lg">
+                <label class="block text-xs font-semibold text-secondary mb-1">Ville</label>
+                <input name="ville" class="w-full bg-surface border border-outline-variant rounded p-2 focus:border-primary outline-none" type="text" value="{{ fournisseur.ville }}">
+            </div>
+            <div class="mb-lg flex items-center gap-2">
+                <input type="checkbox" name="actif" id="actif" {% if fournisseur.actif %}checked{% endif %}>
+                <label for="actif" class="text-sm font-semibold text-secondary">Fournisseur actif</label>
+            </div>
+
+            <button type="submit" class="bg-primary-container text-on-primary-container font-semibold py-2 px-md rounded-lg hover:bg-primary hover:text-white transition-colors">
+                Enregistrer
+            </button>
+        </form>
+    </div>
+
+    <!-- Colonne droite : produits fournis -->
+    <div class="lg:col-span-2">
+        <div class="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant overflow-hidden">
+            <div class="p-lg border-b border-outline-variant">
+                <h3 class="text-lg font-bold">Produits fournis</h3>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-surface-container-low border-b border-outline-variant">
+                            <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider">Produit</th>
+                            <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider text-right">Prix d'achat</th>
+                            <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider text-right">Stock</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for produit in produits %}
+                        <tr onclick="window.location='{% url 'stock:detail_produit' produit.pk %}'" class="cursor-pointer border-b border-outline-variant hover:bg-surface-container-low transition-colors last:border-0">
+                            <td class="py-3 px-md font-semibold text-on-surface">{{ produit.nom }}</td>
+                            <td class="py-3 px-md text-right font-mono text-on-surface-variant">{{ produit.prix_achat }} FCFA</td>
+                            <td class="py-3 px-md text-right text-on-surface-variant">{{ produit.quantite_stock }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="3" class="py-6 px-md text-center text-secondary">Aucun produit associé pour le moment</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

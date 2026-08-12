@@ -1,0 +1,118 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>{% block title %}TechStock{% endblock %}</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<style>
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    body { font-family: 'Inter', sans-serif; }
+</style>
+<script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                colors: {
+                    "primary": "#004ac6",
+                    "primary-container": "#2563eb",
+                    "on-primary-container": "#eeefff",
+                    "secondary": "#555f6d",
+                    "surface": "#f8f9fa",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-container-low": "#f3f4f5",
+                    "surface-container": "#edeeef",
+                    "surface-container-high": "#e7e8e9",
+                    "outline-variant": "#c3c6d7",
+                    "on-surface": "#191c1d",
+                    "on-surface-variant": "#434655",
+                    "error": "#ba1a1a",
+                },
+                spacing: { "base": "4px", "xs": "8px", "sm": "12px", "md": "16px", "lg": "24px", "xl": "32px" },
+            }
+        }
+    }
+</script>
+</head>
+<body class="bg-surface text-on-surface min-h-screen">
+
+<!-- Sidebar -->
+<nav class="hidden md:flex bg-surface-container-low text-primary fixed left-0 top-0 bottom-0 w-[260px] border-r border-outline-variant flex-col py-md z-[60]">
+    <div class="px-lg pb-md mb-md border-b border-outline-variant">
+        <img src="{% static 'img/logo.png' %}" alt="TechStock" class="w-full max-w-[140px] mx-auto">
+    </div>
+    <ul class="flex-1 overflow-y-auto">
+        <li class="mb-1">
+            <a class="flex items-center {% if request.resolver_match.url_name == 'tableau_de_bord' %}bg-primary-container text-on-primary-container font-bold{% else %}text-on-surface-variant hover:bg-surface-container-high{% endif %} mx-2 py-2 px-md rounded-lg transition-colors" href="{% url 'stock:tableau_de_bord' %}">
+                <span class="material-symbols-outlined mr-2">dashboard</span> Tableau de bord
+            </a>
+        </li>
+        <li class="mb-1">
+            <a class="flex items-center {% if request.resolver_match.url_name == 'liste_produits' %}bg-primary-container text-on-primary-container font-bold{% else %}text-on-surface-variant hover:bg-surface-container-high{% endif %} mx-2 py-2 px-md rounded-lg transition-colors" href="{% url 'stock:liste_produits' %}">
+                <span class="material-symbols-outlined mr-2">inventory_2</span> Produits
+            </a>
+        </li>
+        {% if perms.stock.add_categorie %}
+        <li class="mb-1">
+            <a class="flex items-center {% if request.resolver_match.url_name == 'categories_marques' %}bg-primary-container text-on-primary-container font-bold{% else %}text-on-surface-variant hover:bg-surface-container-high{% endif %} mx-2 py-2 px-md rounded-lg transition-colors" href="{% url 'stock:categories_marques' %}">
+                <span class="material-symbols-outlined mr-2">sell</span> Catégories & Marques
+            </a>
+        </li>
+        {% endif %}
+        <li class="mb-1">
+            <a class="flex items-center {% if request.resolver_match.url_name == 'liste_clients' or request.resolver_match.url_name == 'detail_client' %}bg-primary-container text-on-primary-container font-bold{% else %}text-on-surface-variant hover:bg-surface-container-high{% endif %} mx-2 py-2 px-md rounded-lg transition-colors" href="{% url 'stock:liste_clients' %}">
+                <span class="material-symbols-outlined mr-2">group</span> Clients
+            </a>
+        </li>
+        {% if perms.stock.view_fournisseur %}
+        <li class="mb-1">
+            <a class="flex items-center {% if request.resolver_match.url_name == 'liste_fournisseurs' or request.resolver_match.url_name == 'detail_fournisseur' %}bg-primary-container text-on-primary-container font-bold{% else %}text-on-surface-variant hover:bg-surface-container-high{% endif %} mx-2 py-2 px-md rounded-lg transition-colors" href="{% url 'stock:liste_fournisseurs' %}">
+                <span class="material-symbols-outlined mr-2">local_shipping</span> Fournisseurs
+            </a>
+        </li>
+        {% endif %}
+        {% if perms.stock.view_achat %}
+        <li class="mb-1">
+            <a class="flex items-center {% if request.resolver_match.url_name == 'liste_achats' or request.resolver_match.url_name == 'detail_achat' or request.resolver_match.url_name == 'nouvel_achat' %}bg-primary-container text-on-primary-container font-bold{% else %}text-on-surface-variant hover:bg-surface-container-high{% endif %} mx-2 py-2 px-md rounded-lg transition-colors" href="{% url 'stock:liste_achats' %}">
+                <span class="material-symbols-outlined mr-2">shopping_cart</span> Achats
+            </a>
+        </li>
+        {% endif %}
+        <li class="mb-1">
+            <a class="flex items-center {% if request.resolver_match.url_name == 'liste_ventes' %}bg-primary-container text-on-primary-container font-bold{% else %}text-on-surface-variant hover:bg-surface-container-high{% endif %} mx-2 py-2 px-md rounded-lg transition-colors" href="{% url 'stock:liste_ventes' %}">
+                <span class="material-symbols-outlined mr-2">point_of_sale</span> Ventes
+            </a>
+        </li>
+        <li class="mb-1">
+            <a class="flex items-center {% if request.resolver_match.url_name == 'nouvelle_vente' %}bg-primary-container text-on-primary-container font-bold{% else %}text-on-surface-variant hover:bg-surface-container-high{% endif %} mx-2 py-2 px-md rounded-lg transition-colors" href="{% url 'stock:nouvelle_vente' %}">
+                <span class="material-symbols-outlined mr-2">add_shopping_cart</span> Nouvelle vente
+            </a>
+        </li>
+    </ul>
+    <div class="mt-auto px-lg pt-md border-t border-outline-variant">
+        <form method="POST" action="{% url 'stock:logout' %}">
+            {% csrf_token %}
+            <button type="submit" class="w-full flex items-center text-on-surface-variant hover:bg-surface-container-high mx-2 py-2 px-md rounded-lg transition-colors text-left bg-transparent border-0 cursor-pointer">
+                <span class="material-symbols-outlined mr-2">logout</span> Déconnexion
+            </button>
+        </form>
+    </div>
+</nav>
+
+<!-- Topbar -->
+<header class="hidden md:flex bg-surface-container-lowest border-b border-outline-variant shadow-sm fixed top-0 right-0 left-0 h-16 items-center justify-end px-lg z-50 ml-[260px]">
+    <div class="flex items-center space-x-sm border-l border-outline-variant pl-lg">
+        <span class="text-sm text-secondary font-semibold">{{ request.user.username }}</span>
+    </div>
+</header>
+
+<!-- Contenu -->
+<main class="md:ml-[260px] md:pt-16 p-md md:p-xl max-w-[1440px] mx-auto">
+    {% block content %}{% endblock %}
+</main>
+
+</body>
+</html>

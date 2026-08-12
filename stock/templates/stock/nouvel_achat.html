@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+{% block title %}Nouvel achat - TechStock{% endblock %}
+
+{% block content %}
+<div class="mb-lg">
+    <h2 class="text-3xl font-bold text-on-surface">Nouvel achat</h2>
+    <p class="text-secondary mt-1">Enregistrer une réception de marchandise</p>
+</div>
+
+<form method="POST" class="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-sm p-lg max-w-3xl">
+    {% csrf_token %}
+
+    <div class="mb-lg">
+        <label class="block text-xs font-semibold text-secondary mb-1">Fournisseur</label>
+        <select name="fournisseur" class="w-full bg-surface border border-outline-variant rounded p-2 focus:border-primary outline-none">
+            <option value="">-- Aucun --</option>
+            {% for fournisseur in fournisseurs %}
+            <option value="{{ fournisseur.id }}">{{ fournisseur.nom }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <h3 class="text-sm font-semibold text-secondary uppercase tracking-wider mb-2">Produits reçus</h3>
+
+    <div id="lignes-produits" class="space-y-2 mb-md">
+        <div class="ligne-produit flex gap-2 items-center">
+            <select name="produit" required class="flex-1 bg-surface border border-outline-variant rounded p-2 focus:border-primary outline-none">
+                <option value="">-- Choisir un produit --</option>
+                {% for produit in produits %}
+                <option value="{{ produit.id }}" data-prix="{{ produit.prix_achat }}">{{ produit.nom }}</option>
+                {% endfor %}
+            </select>
+            <input type="number" name="quantite" min="1" value="1" required placeholder="Qté" class="w-24 bg-surface border border-outline-variant rounded p-2 font-mono text-right focus:border-primary outline-none">
+            <input type="number" name="prix_unitaire" min="0" step="0.01" placeholder="Prix unit." class="w-32 bg-surface border border-outline-variant rounded p-2 font-mono text-right focus:border-primary outline-none">
+            <button type="button" onclick="supprimerLigne(this)" class="text-secondary hover:text-error p-2">
+                <span class="material-symbols-outlined text-[18px]">delete</span>
+            </button>
+        </div>
+    </div>
+
+    <button type="button" onclick="ajouterLigne()" class="flex items-center gap-1 text-primary font-semibold text-sm mb-lg hover:underline">
+        <span class="material-symbols-outlined text-[18px]">add</span> Ajouter un produit
+    </button>
+
+    <div class="pt-md border-t border-outline-variant">
+        <button type="submit" class="bg-primary-container text-on-primary-container font-semibold py-2 px-lg rounded-lg hover:bg-primary hover:text-white transition-colors">
+            Valider l'achat
+        </button>
+    </div>
+</form>
+
+<script>
+    function ajouterLigne() {
+        const conteneur = document.getElementById('lignes-produits');
+        const premiereLigne = conteneur.querySelector('.ligne-produit');
+        const nouvelleLigne = premiereLigne.cloneNode(true);
+        nouvelleLigne.querySelector('select').value = '';
+        nouvelleLigne.querySelectorAll('input').forEach(input => {
+            input.value = input.name === 'quantite' ? 1 : '';
+        });
+        conteneur.appendChild(nouvelleLigne);
+    }
+
+    function supprimerLigne(bouton) {
+        const conteneur = document.getElementById('lignes-produits');
+        if (conteneur.querySelectorAll('.ligne-produit').length > 1) {
+            bouton.closest('.ligne-produit').remove();
+        }
+    }
+
+    // Pré-remplit le prix d'achat quand on choisit un produit (reste modifiable)
+    document.getElementById('lignes-produits').addEventListener('change', function(evenement) {
+        if (evenement.target.name === 'produit') {
+            const selectionne = evenement.target.selectedOptions[0];
+            const champPrix = evenement.target.closest('.ligne-produit').querySelector('input[name="prix_unitaire"]');
+            if (selectionne && selectionne.dataset.prix && !champPrix.value) {
+                champPrix.value = selectionne.dataset.prix;
+            }
+        }
+    });
+</script>
+{% endblock %}

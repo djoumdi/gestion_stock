@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ client.nom }} - TechStock{% endblock %}
+
+{% block content %}
+<div class="mb-lg">
+    <div class="text-sm text-secondary flex items-center gap-1 mb-1">
+        <a class="hover:text-primary transition-colors" href="{% url 'stock:liste_clients' %}">Clients</a>
+        <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+        <span class="text-on-surface font-semibold">{{ client.nom }}</span>
+    </div>
+    <h2 class="text-3xl font-bold text-on-surface">{{ client.nom }}</h2>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-lg">
+
+    <!-- Colonne gauche : formulaire d'édition -->
+    <div class="lg:col-span-1">
+        <form method="POST" class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg shadow-sm">
+            {% csrf_token %}
+            <h3 class="text-lg font-bold mb-md">Informations</h3>
+
+            <div class="mb-lg">
+                <label class="block text-xs font-semibold text-secondary mb-1">Nom</label>
+                <input name="nom" class="w-full bg-surface border border-outline-variant rounded p-2 focus:border-primary outline-none" type="text" value="{{ client.nom }}" required>
+            </div>
+            <div class="mb-lg">
+                <label class="block text-xs font-semibold text-secondary mb-1">Téléphone</label>
+                <input name="telephone" class="w-full bg-surface border border-outline-variant rounded p-2 focus:border-primary outline-none" type="text" value="{{ client.telephone }}">
+            </div>
+            <div class="mb-lg">
+                <label class="block text-xs font-semibold text-secondary mb-1">Email</label>
+                <input name="email" class="w-full bg-surface border border-outline-variant rounded p-2 focus:border-primary outline-none" type="email" value="{{ client.email }}">
+            </div>
+
+            <button type="submit" class="bg-primary-container text-on-primary-container font-semibold py-2 px-md rounded-lg hover:bg-primary hover:text-white transition-colors">
+                Enregistrer
+            </button>
+        </form>
+    </div>
+
+    <!-- Colonne droite : historique des achats -->
+    <div class="lg:col-span-2">
+        <div class="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant overflow-hidden">
+            <div class="p-lg border-b border-outline-variant">
+                <h3 class="text-lg font-bold">Historique des achats</h3>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-surface-container-low border-b border-outline-variant">
+                            <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider">N°</th>
+                            <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider">Date</th>
+                            <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider text-right">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for vente in ventes %}
+                        <tr onclick="window.location='{% url 'stock:detail_vente' vente.pk %}'" class="cursor-pointer border-b border-outline-variant hover:bg-surface-container-low transition-colors last:border-0">
+                            <td class="py-3 px-md font-mono text-secondary">#{{ vente.id }}</td>
+                            <td class="py-3 px-md text-on-surface-variant">{{ vente.date_vente|date:"d/m/Y H:i" }}</td>
+                            <td class="py-3 px-md text-right font-mono font-bold text-on-surface">{{ vente.total }} FCFA</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="3" class="py-6 px-md text-center text-secondary">Aucun achat pour le moment</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

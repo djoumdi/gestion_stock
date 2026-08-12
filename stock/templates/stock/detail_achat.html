@@ -1,0 +1,102 @@
+<!-- stock/templates/stock/detail_achat.html -->
+{% extends 'base.html' %}
+
+{% block title %}Achat #{{ achat.id }} - TechStock{% endblock %}
+
+{% block content %}
+<div class="mb-lg">
+    <div class="text-sm text-secondary flex items-center gap-1 mb-1">
+        <a class="hover:text-primary transition-colors" href="{% url 'stock:liste_achats' %}">Achats</a>
+        <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+        <span class="text-on-surface font-semibold">#{{ achat.id }}</span>
+    </div>
+    <h2 class="text-3xl font-bold text-on-surface">Achat #{{ achat.id }}</h2>
+</div>
+
+<form method="POST">
+    {% csrf_token %}
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-lg mb-lg">
+        <div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg shadow-sm">
+            <h3 class="text-xs font-semibold text-secondary uppercase tracking-wider mb-2">Fournisseur</h3>
+            {% if peut_modifier %}
+            <select name="fournisseur" class="w-full bg-surface border border-outline-variant rounded p-2 focus:border-primary outline-none">
+                <option value="">-- Aucun --</option>
+                {% for fournisseur in fournisseurs %}
+                <option value="{{ fournisseur.id }}" {% if achat.fournisseur_id == fournisseur.id %}selected{% endif %}>{{ fournisseur.nom }}</option>
+                {% endfor %}
+            </select>
+            {% else %}
+            <p class="font-bold text-on-surface">{{ achat.fournisseur|default:"Non précisé" }}</p>
+            {% endif %}
+        </div>
+        <div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg shadow-sm">
+            <h3 class="text-xs font-semibold text-secondary uppercase tracking-wider mb-2">Date</h3>
+            <p class="font-bold text-on-surface">{{ achat.date_achat|date:"d/m/Y H:i" }}</p>
+        </div>
+        <div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg shadow-sm">
+            <h3 class="text-xs font-semibold text-secondary uppercase tracking-wider mb-2">Total</h3>
+            <p class="font-bold text-primary text-xl font-mono">{{ achat.total }} FCFA</p>
+        </div>
+    </div>
+
+    <div class="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-surface-container-low border-b border-outline-variant">
+                        <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider">Produit</th>
+                        <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider text-right">Qté reçue</th>
+                        <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider text-right">Prix unitaire</th>
+                        <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider text-right">Sous-total</th>
+                        {% if peut_modifier %}<th class="py-3 px-md w-12"></th>{% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ligne in achat.lignes.all %}
+                    <tr class="border-b border-outline-variant last:border-0">
+                        <td class="py-3 px-md font-semibold text-on-surface">
+                            {{ ligne.produit.nom }}
+                            <input type="hidden" name="ligne_id" value="{{ ligne.id }}">
+                        </td>
+                        <td class="py-3 px-md text-right">
+                            {% if peut_modifier %}
+                            <input type="number" name="quantite" min="1" value="{{ ligne.quantite }}" class="w-20 bg-surface border border-outline-variant rounded p-1 font-mono text-right focus:border-primary outline-none">
+                            {% else %}
+                            <span class="text-on-surface-variant">+{{ ligne.quantite }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3 px-md text-right">
+                            {% if peut_modifier %}
+                            <input type="number" name="prix_unitaire" min="0" step="0.01" value="{{ ligne.prix_unitaire }}" class="w-28 bg-surface border border-outline-variant rounded p-1 font-mono text-right focus:border-primary outline-none">
+                            {% else %}
+                            <span class="text-on-surface-variant font-mono">{{ ligne.prix_unitaire }} FCFA</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3 px-md text-right font-mono font-bold text-on-surface">{{ ligne.sous_total }} FCFA</td>
+                        {% if peut_modifier %}
+                        <td class="py-3 px-md text-center">
+                            <label class="flex items-center justify-center gap-1 text-xs text-error cursor-pointer" title="Supprimer cette ligne">
+                                <input type="checkbox" name="supprimer" value="{{ ligne.id }}">
+                            </label>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5" class="py-6 px-md text-center text-secondary">Aucun produit sur cet achat</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if peut_modifier %}
+    <div class="mt-md">
+        <button type="submit" class="bg-primary-container text-on-primary-container font-semibold py-2 px-lg rounded-lg hover:bg-primary hover:text-white transition-colors">
+            Enregistrer les modifications
+        </button>
+        <p class="text-xs text-secondary mt-2">Modifier une quantité ajuste automatiquement le stock du produit concerné. Coche la case pour supprimer une ligne (le stock reçu sera annulé).</p>
+    </div>
+    {% endif %}
+</form>
+{% endblock %}

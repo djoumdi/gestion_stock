@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block title %}Achats - TechStock{% endblock %}
+
+{% block content %}
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-xl gap-sm">
+    <div>
+        <h2 class="text-3xl font-bold text-on-surface">Achats</h2>
+        <p class="text-secondary mt-1">Historique des approvisionnements</p>
+    </div>
+    <a href="{% url 'stock:nouvel_achat' %}" class="bg-primary-container text-on-primary-container font-semibold py-2 px-md rounded-lg flex items-center hover:bg-primary hover:text-white transition-colors shadow-sm">
+        <span class="material-symbols-outlined text-[18px] mr-1">add</span> Nouvel achat
+    </a>
+</div>
+
+<div class="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-surface-container-low border-b border-outline-variant">
+                    <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider">N°</th>
+                    <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider">Fournisseur</th>
+                    <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider">Date</th>
+                    <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider text-right">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for achat in achats %}
+                <tr onclick="window.location='{% url 'stock:detail_achat' achat.pk %}'" class="cursor-pointer border-b border-outline-variant hover:bg-surface-container-low transition-colors">
+                    <td class="py-3 px-md font-mono text-secondary">#{{ achat.id }}</td>
+                    <td class="py-3 px-md font-semibold text-on-surface">{{ achat.fournisseur|default:"—" }}</td>
+                    <td class="py-3 px-md text-on-surface-variant">{{ achat.date_achat|date:"d/m/Y H:i" }}</td>
+                    <td class="py-3 px-md text-right font-mono font-bold text-on-surface">{{ achat.total }} FCFA</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="py-6 px-md text-center text-secondary">Aucun achat pour le moment</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

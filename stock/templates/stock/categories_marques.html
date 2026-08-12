@@ -1,0 +1,111 @@
+<!-- stock/templates/stock/categories_marques.html -->
+{% extends 'base.html' %}
+
+{% block title %}Catégories & Marques - TechStock{% endblock %}
+
+{% block content %}
+<div class="mb-lg">
+    <h2 class="text-3xl font-bold text-on-surface">Catégories & Marques</h2>
+    <p class="text-secondary mt-1">Organisez votre catalogue</p>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-lg">
+
+    <!-- Panneau Catégories -->
+    <div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm overflow-hidden">
+        <div class="p-lg border-b border-outline-variant flex justify-between items-center">
+            <h3 class="text-lg font-bold flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary">category</span> Catégories
+            </h3>
+        </div>
+
+        <form method="POST" class="p-md bg-surface-container-low border-b border-outline-variant flex gap-2">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="ajouter_categorie">
+            <input type="text" name="nom_categorie" placeholder="Nouvelle catégorie..." required class="flex-1 bg-surface-container-lowest border border-outline-variant rounded p-2 text-sm focus:border-primary outline-none">
+            <button type="submit" class="bg-primary text-white px-3 rounded flex items-center justify-center hover:bg-primary-container transition-colors">
+                <span class="material-symbols-outlined text-[18px]">add</span>
+            </button>
+        </form>
+
+        <table class="w-full text-left">
+            <thead>
+                <tr class="bg-surface-container-low border-b border-outline-variant">
+                    <th class="px-md py-2 text-xs font-semibold text-secondary uppercase">Nom</th>
+                    <th class="px-md py-2 text-xs font-semibold text-secondary uppercase text-right">Produits</th>
+                    <th class="px-md py-2 w-12"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for categorie in categories %}
+                <tr class="border-b border-outline-variant last:border-0 hover:bg-surface-container-low transition-colors">
+                    <td class="px-md py-3 font-semibold text-on-surface">{{ categorie.nom }}</td>
+                    <td class="px-md py-3 text-right text-secondary">{{ categorie.nb_produits }}</td>
+                    <td class="px-md py-3 text-right">
+                        <form method="POST" onsubmit="return confirm('Supprimer cette catégorie ?');">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="supprimer_categorie">
+                            <input type="hidden" name="categorie_id" value="{{ categorie.id }}">
+                            <button type="submit" class="text-secondary hover:text-error p-1">
+                                <span class="material-symbols-outlined text-[18px]">delete</span>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="3" class="px-md py-4 text-center text-secondary text-sm">Aucune catégorie</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Panneau Marques -->
+    <div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm overflow-hidden">
+        <div class="p-lg border-b border-outline-variant flex justify-between items-center">
+            <h3 class="text-lg font-bold flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary">verified</span> Marques
+            </h3>
+        </div>
+
+        <form method="POST" class="p-md bg-surface-container-low border-b border-outline-variant flex gap-2">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="ajouter_marque">
+            <input type="text" name="nom_marque" placeholder="Nouvelle marque..." required class="flex-1 bg-surface-container-lowest border border-outline-variant rounded p-2 text-sm focus:border-primary outline-none">
+            <button type="submit" class="bg-primary text-white px-3 rounded flex items-center justify-center hover:bg-primary-container transition-colors">
+                <span class="material-symbols-outlined text-[18px]">add</span>
+            </button>
+        </form>
+
+        <table class="w-full text-left">
+            <thead>
+                <tr class="bg-surface-container-low border-b border-outline-variant">
+                    <th class="px-md py-2 text-xs font-semibold text-secondary uppercase">Nom</th>
+                    <th class="px-md py-2 text-xs font-semibold text-secondary uppercase text-right">Produits</th>
+                    <th class="px-md py-2 w-12"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for marque in marques %}
+                <tr class="border-b border-outline-variant last:border-0 hover:bg-surface-container-low transition-colors">
+                    <td class="px-md py-3 font-semibold text-on-surface">{{ marque.nom }}</td>
+                    <td class="px-md py-3 text-right text-secondary">{{ marque.nb_produits }}</td>
+                    <td class="px-md py-3 text-right">
+                        <form method="POST" onsubmit="return confirm('Supprimer cette marque ?');">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="supprimer_marque">
+                            <input type="hidden" name="marque_id" value="{{ marque.id }}">
+                            <button type="submit" class="text-secondary hover:text-error p-1">
+                                <span class="material-symbols-outlined text-[18px]">delete</span>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="3" class="px-md py-4 text-center text-secondary text-sm">Aucune marque</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,82 @@
+<!-- stock/templates/stock/detail_vente.html -->
+{% extends 'base.html' %}
+
+{% block title %}Vente #{{ vente.id }} - TechStock{% endblock %}
+
+{% block content %}
+<div class="flex justify-between items-start mb-lg">
+    <div>
+        <div class="text-sm text-secondary flex items-center gap-1 mb-1">
+            <a class="hover:text-primary transition-colors" href="{% url 'stock:liste_ventes' %}">Ventes</a>
+            <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+            <span class="text-on-surface font-semibold">#{{ vente.id }}</span>
+        </div>
+        <h2 class="text-3xl font-bold text-on-surface">Vente #{{ vente.id }}</h2>
+        <p class="text-sm text-secondary mt-1">Facture {{ facture.numero }}</p>
+    </div>
+    <a href="{% url 'stock:facture_vente' vente.pk %}" target="_blank" class="bg-primary-container text-on-primary-container font-semibold py-2 px-md rounded-lg flex items-center hover:bg-primary hover:text-white transition-colors shadow-sm">
+        <span class="material-symbols-outlined text-[18px] mr-1">receipt_long</span> Générer la facture
+    </a>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-lg mb-lg">
+    <div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg shadow-sm">
+        <h3 class="text-xs font-semibold text-secondary uppercase tracking-wider mb-2">Client</h3>
+        <p class="font-bold text-on-surface">{{ vente.client|default:"Client anonyme" }}</p>
+        {% if vente.client.telephone %}<p class="text-sm text-secondary">{{ vente.client.telephone }}</p>{% endif %}
+        {% if vente.client.email %}<p class="text-sm text-secondary">{{ vente.client.email }}</p>{% endif %}
+    </div>
+    <div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg shadow-sm">
+        <h3 class="text-xs font-semibold text-secondary uppercase tracking-wider mb-2">Date</h3>
+        <p class="font-bold text-on-surface">{{ vente.date_vente|date:"d/m/Y H:i" }}</p>
+        <p class="text-sm text-secondary mt-1">Vendu par {{ vente.vendeur.username|default:"—" }}</p>
+    </div>
+    <div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg shadow-sm">
+        <h3 class="text-xs font-semibold text-secondary uppercase tracking-wider mb-2">Total & Paiement</h3>
+        <p class="font-bold text-primary text-xl font-mono mb-2">{{ vente.total }} FCFA</p>
+        {% if facture.est_payee %}
+        <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-[#D1FAE5] text-[#065F46]">
+            <span class="material-symbols-outlined text-[14px]">check_circle</span>
+            Payée ({{ facture.paiement.get_mode_paiement_display }})
+        </span>
+        {% else %}
+        <form method="POST" action="{% url 'stock:enregistrer_paiement' vente.pk %}" class="flex flex-col gap-2">
+            {% csrf_token %}
+            <select name="mode_paiement" class="bg-surface border border-outline-variant rounded p-1.5 text-sm focus:border-primary outline-none">
+                <option value="especes">Espèces</option>
+                <option value="mobile_money">Mobile Money</option>
+                <option value="carte">Carte bancaire</option>
+            </select>
+            <button type="submit" class="bg-primary-container text-on-primary-container font-semibold text-sm py-1.5 px-3 rounded-lg hover:bg-primary hover:text-white transition-colors">
+                Marquer comme payée
+            </button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+<div class="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-surface-container-low border-b border-outline-variant">
+                    <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider">Produit</th>
+                    <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider text-right">Qté</th>
+                    <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider text-right">Prix unitaire</th>
+                    <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider text-right">Sous-total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ligne in vente.lignes.all %}
+                <tr class="border-b border-outline-variant">
+                    <td class="py-3 px-md font-semibold text-on-surface">{{ ligne.produit.nom }}</td>
+                    <td class="py-3 px-md text-right text-on-surface-variant">{{ ligne.quantite }}</td>
+                    <td class="py-3 px-md text-right font-mono text-on-surface-variant">{{ ligne.prix_unitaire }} FCFA</td>
+                    <td class="py-3 px-md text-right font-mono font-bold text-on-surface">{{ ligne.sous_total }} FCFA</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ produit.nom }} - TechStock{% endblock %}
+
+{% block content %}
+<div class="flex justify-between items-center mb-lg">
+    <div class="text-sm text-secondary flex items-center gap-1">
+        <a class="hover:text-primary transition-colors" href="{% url 'stock:liste_produits' %}">Produits</a>
+        <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+        <span class="text-on-surface font-semibold">{{ produit.nom }}</span>
+    </div>
+</div>
+
+<form method="POST" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-lg">
+
+        <!-- Colonne gauche : formulaire -->
+        <div class="lg:col-span-2 space-y-lg">
+            <div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg shadow-sm">
+                <h2 class="text-lg font-bold mb-md">Informations générales</h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-lg mb-lg">
+                    <div>
+                        <label class="block text-xs font-semibold text-secondary mb-1">Nom du produit</label>
+                        <input name="nom" class="w-full bg-surface border border-outline-variant rounded p-2 focus:border-primary outline-none" type="text" value="{{ produit.nom }}" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-secondary mb-1">Marque</label>
+                        <select name="marque" class="w-full bg-surface border border-outline-variant rounded p-2 focus:border-primary outline-none">
+                            <option value="">-- Aucune --</option>
+                            {% for marque in marques %}
+                            <option value="{{ marque.id }}" {% if produit.marque_id == marque.id %}selected{% endif %}>{{ marque.nom }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-lg mb-lg">
+                    <div>
+                        <label class="block text-xs font-semibold text-secondary mb-1">Prix de vente (FCFA)</label>
+                        <input name="prix_vente" class="w-full bg-surface border border-outline-variant rounded p-2 font-mono text-right focus:border-primary outline-none" type="number" step="0.01" value="{{ produit.prix_vente }}" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-secondary mb-1">Prix d'achat (FCFA)</label>
+                        <input name="prix_achat" class="w-full bg-surface border border-outline-variant rounded p-2 font-mono text-right focus:border-primary outline-none" type="number" step="0.01" value="{{ produit.prix_achat }}" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-secondary mb-1">Seuil d'alerte</label>
+                        <input name="seuil_alerte" class="w-full bg-surface border border-outline-variant rounded p-2 font-mono text-right focus:border-primary outline-none" type="number" value="{{ produit.seuil_alerte }}">
+                    </div>
+                </div>
+
+                <button type="submit" class="bg-primary-container text-on-primary-container font-semibold py-2 px-md rounded-lg hover:bg-primary hover:text-white transition-colors">
+                    Enregistrer les modifications
+                </button>
+            </div>
+        </div>
+
+        <!-- Colonne droite : image + statut stock -->
+        <div class="space-y-lg">
+            <div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg shadow-sm text-center">
+                <div id="apercu-conteneur" class="w-full aspect-square bg-surface-container-low rounded border-2 border-dashed border-outline-variant flex items-center justify-center mb-md overflow-hidden relative">
+                    {% if produit.image %}
+                    <img id="apercu-image" class="absolute inset-0 w-full h-full object-cover" src="{{ produit.image.url }}" alt="{{ produit.nom }}">
+                    {% else %}
+                    <img id="apercu-image" class="absolute inset-0 w-full h-full object-cover hidden" alt="{{ produit.nom }}">
+                    <span id="apercu-placeholder" class="material-symbols-outlined text-outline text-5xl">image</span>
+                    {% endif %}
+                </div>
+
+                <input type="file" name="image" id="input-image" accept="image/*" class="hidden" onchange="previsualiserImage(this)">
+                <button type="button" onclick="document.getElementById('input-image').click()"
+                        class="w-full flex items-center justify-center gap-2 bg-surface border border-outline-variant rounded-lg py-2 px-md text-sm font-semibold text-on-surface-variant hover:bg-surface-container-high hover:text-primary transition-colors">
+                    <span class="material-symbols-outlined text-[18px]">upload</span>
+                    <span id="label-bouton-image">Changer l'image</span>
+                </button>
+            </div>
+
+            <div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg shadow-sm">
+                <h3 class="text-lg font-bold mb-sm border-b border-outline-variant pb-2">Statut du stock</h3>
+                <div class="flex justify-between items-center mb-2 mt-3">
+                    <span class="text-secondary text-sm">Stock actuel</span>
+                    <span class="font-mono font-bold text-lg">{{ produit.quantite_stock }}</span>
+                </div>
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-secondary text-sm">Seuil d'alerte</span>
+                    <span class="font-mono text-on-surface-variant">{{ produit.seuil_alerte }}</span>
+                </div>
+                {% if produit.quantite_stock == 0 %}
+                <span class="inline-block bg-[#FEE2E2] text-[#991B1B] text-sm font-bold px-3 py-1 rounded-full">Rupture</span>
+                {% elif produit.en_alerte %}
+                <span class="inline-block bg-[#FEF3C7] text-[#92400E] text-sm font-bold px-3 py-1 rounded-full">Stock faible</span>
+                {% else %}
+                <span class="inline-block bg-[#D1FAE5] text-[#065F46] text-sm font-bold px-3 py-1 rounded-full">En stock</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</form>
+
+<script>
+    function previsualiserImage(input) {
+        if (!input.files || !input.files[0]) return;
+
+        const fichier = input.files[0];
+        const lecteur = new FileReader();
+
+        lecteur.onload = function(evenement) {
+            const img = document.getElementById('apercu-image');
+            const placeholder = document.getElementById('apercu-placeholder');
+
+            img.src = evenement.target.result;
+            img.classList.remove('hidden');
+            if (placeholder) placeholder.classList.add('hidden');
+
+            document.getElementById('label-bouton-image').textContent = fichier.name;
+        };
+
+        lecteur.readAsDataURL(fichier);
+    }
+</script>
+{% endblock %}

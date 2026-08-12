@@ -1,0 +1,24 @@
+<!-- templates/notifications.html -->
+{% extends 'base.html' %}
+
+{% block title %}Notifications - TechStock{% endblock %}
+
+{% block content %}
+<div class="mb-lg">
+    <h2 class="text-3xl font-bold text-on-surface">Notifications</h2>
+</div>
+
+<div class="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant overflow-hidden max-w-2xl">
+    {% for notif in notifications %}
+    <a href="{{ notif.lien|default:'#' }}" class="flex items-start gap-3 px-lg py-md border-b border-outline-variant last:border-0 hover:bg-surface-container-low transition-colors {% if not notif.lue %}bg-primary-container/10{% endif %}">
+        <span class="material-symbols-outlined text-primary mt-0.5">{% if notif.lue %}notifications{% else %}notifications_active{% endif %}</span>
+        <div>
+            <p class="text-sm text-on-surface {% if not notif.lue %}font-semibold{% endif %}">{{ notif.message }}</p>
+            <p class="text-xs text-secondary mt-1">{{ notif.date_creation|date:"d/m/Y H:i" }}</p>
+        </div>
+    </a>
+    {% empty %}
+    <p class="text-center text-secondary py-8">Aucune notification pour le moment</p>
+    {% endfor %}
+</div>
+{% endblock %}

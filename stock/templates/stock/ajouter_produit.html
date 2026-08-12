@@ -1,0 +1,155 @@
+<!-- stock/templates/stock/ajouter_produit.html -->
+{% extends 'base.html' %}
+
+{% block title %}Ajouter un produit - TechStock{% endblock %}
+
+{% block content %}
+<div class="mb-lg">
+    <div class="text-sm text-secondary flex items-center gap-1 mb-1">
+        <a class="hover:text-primary transition-colors" href="{% url 'stock:liste_produits' %}">Produits</a>
+        <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+        <span class="text-on-surface font-semibold">Nouveau produit</span>
+    </div>
+    <h2 class="text-3xl font-bold text-on-surface">Ajouter un produit</h2>
+</div>
+
+<form method="POST" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-lg">
+
+        <!-- Colonne gauche : formulaire -->
+        <div class="lg:col-span-2 space-y-lg">
+            <div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg shadow-sm">
+                <h2 class="text-lg font-bold mb-md">Informations générales</h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-lg mb-lg">
+                    <div>
+                        <label class="block text-xs font-semibold text-secondary mb-1">Nom du produit</label>
+                        <input name="nom" class="w-full bg-surface border border-outline-variant rounded p-2 focus:border-primary outline-none" type="text" required autofocus>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-secondary mb-1">Marque</label>
+                        <select name="marque" id="select-marque" class="w-full bg-surface border border-outline-variant rounded p-2 focus:border-primary outline-none">
+                            <option value="">-- Aucune --</option>
+                            {% for marque in marques %}
+                            <option value="{{ marque.id }}">{{ marque.nom }}</option>
+                            {% endfor %}
+                            <option value="__nouvelle__">+ Créer une nouvelle marque...</option>
+                        </select>
+                        <input type="text" name="nouvelle_marque" id="input-nouvelle-marque" placeholder="Nom de la nouvelle marque" class="hidden w-full mt-2 bg-surface border border-primary rounded p-2 focus:border-primary outline-none">
+                    </div>
+                </div>
+
+                <div class="mb-lg">
+                    <label class="block text-xs font-semibold text-secondary mb-1">Catégorie</label>
+                    <select name="categorie" id="select-categorie" class="w-full bg-surface border border-outline-variant rounded p-2 focus:border-primary outline-none">
+                        <option value="">-- Aucune --</option>
+                        {% for categorie in categories %}
+                        <option value="{{ categorie.id }}">{{ categorie.nom }}</option>
+                        {% endfor %}
+                        <option value="__nouvelle__">+ Créer une nouvelle catégorie...</option>
+                    </select>
+                    <input type="text" name="nouvelle_categorie" id="input-nouvelle-categorie" placeholder="Nom de la nouvelle catégorie" class="hidden w-full mt-2 bg-surface border border-primary rounded p-2 focus:border-primary outline-none">
+                </div>
+
+                <div class="mb-lg">
+                    <label class="block text-xs font-semibold text-secondary mb-1">Fournisseur</label>
+                    <select name="fournisseur" class="w-full bg-surface border border-outline-variant rounded p-2 focus:border-primary outline-none">
+                        <option value="">-- Aucun --</option>
+                        {% for fournisseur in fournisseurs %}
+                        <option value="{{ fournisseur.id }}">{{ fournisseur.nom }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-lg mb-lg">
+                    <div>
+                        <label class="block text-xs font-semibold text-secondary mb-1">Prix de vente (FCFA)</label>
+                        <input name="prix_vente" class="w-full bg-surface border border-outline-variant rounded p-2 font-mono text-right focus:border-primary outline-none" type="number" step="0.01" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-secondary mb-1">Prix d'achat (FCFA)</label>
+                        <input name="prix_achat" class="w-full bg-surface border border-outline-variant rounded p-2 font-mono text-right focus:border-primary outline-none" type="number" step="0.01" required>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-lg mb-lg">
+                    <div>
+                        <label class="block text-xs font-semibold text-secondary mb-1">Quantité en stock</label>
+                        <input name="quantite_stock" class="w-full bg-surface border border-outline-variant rounded p-2 font-mono text-right focus:border-primary outline-none" type="number" value="0">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-secondary mb-1">Seuil d'alerte</label>
+                        <input name="seuil_alerte" class="w-full bg-surface border border-outline-variant rounded p-2 font-mono text-right focus:border-primary outline-none" type="number" value="5">
+                    </div>
+                </div>
+
+                <button type="submit" class="bg-primary-container text-on-primary-container font-semibold py-2 px-md rounded-lg hover:bg-primary hover:text-white transition-colors">
+                    Créer le produit
+                </button>
+            </div>
+        </div>
+
+        <!-- Colonne droite : image -->
+        <div class="space-y-lg">
+            <div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg shadow-sm text-center">
+                <div id="apercu-conteneur" class="w-full aspect-square bg-surface-container-low rounded border-2 border-dashed border-outline-variant flex items-center justify-center mb-md overflow-hidden relative">
+                    {% if produit.image %}
+                    <img id="apercu-image" class="absolute inset-0 w-full h-full object-cover" src="{{ produit.image.url }}" alt="{{ produit.nom }}">
+                    {% else %}
+                    <img id="apercu-image" class="absolute inset-0 w-full h-full object-cover hidden" alt="{{ produit.nom }}">
+                    <span id="apercu-placeholder" class="material-symbols-outlined text-outline text-5xl">image</span>
+                    {% endif %}
+                </div>
+
+                <input type="file" name="image" id="input-image" accept="image/*" class="hidden" onchange="previsualiserImage(this)">
+                <button type="button" onclick="document.getElementById('input-image').click()"
+                        class="w-full flex items-center justify-center gap-2 bg-surface border border-outline-variant rounded-lg py-2 px-md text-sm font-semibold text-on-surface-variant hover:bg-surface-container-high hover:text-primary transition-colors">
+                    <span class="material-symbols-outlined text-[18px]">upload</span>
+                    <span id="label-bouton-image">Ajouter l'image</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+
+<script>
+    function gererChoixCreation(idSelect, idInput) {
+        const select = document.getElementById(idSelect);
+        const input = document.getElementById(idInput);
+        select.addEventListener('change', function() {
+            if (select.value === '__nouvelle__') {
+                input.classList.remove('hidden');
+                input.required = true;
+                input.focus();
+            } else {
+                input.classList.add('hidden');
+                input.required = false;
+                input.value = '';
+            }
+        });
+    }
+    gererChoixCreation('select-marque', 'input-nouvelle-marque');
+    gererChoixCreation('select-categorie', 'input-nouvelle-categorie');
+    
+    function previsualiserImage(input) {
+        if (!input.files || !input.files[0]) return;
+
+        const fichier = input.files[0];
+        const lecteur = new FileReader();
+
+        lecteur.onload = function(evenement) {
+            const img = document.getElementById('apercu-image');
+            const placeholder = document.getElementById('apercu-placeholder');
+
+            img.src = evenement.target.result;
+            img.classList.remove('hidden');
+            if (placeholder) placeholder.classList.add('hidden');
+
+            document.getElementById('label-bouton-image').textContent = fichier.name;
+        };
+
+        lecteur.readAsDataURL(fichier);
+    }
+</script>
+{% endblock %}
