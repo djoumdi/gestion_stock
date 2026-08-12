@@ -1,5 +1,6 @@
 # stock/models.py
 from django.db import models
+from django.conf import settings
 
 
 class Categorie(models.Model):
@@ -62,3 +63,76 @@ class MouvementStock(models.Model):
 
     def __str__(self):
         return f"{self.type_mouvement} - {self.quantite} - {self.produit.nom}"
+
+
+class Inventaire(models.Model):
+    EN_COURS = 'EN_COURS'
+    VALIDE = 'VALIDE'
+    STATUT_CHOICES = [
+        (EN_COURS, 'En cours'),
+        (VALIDE, 'Validé'),
+    ]
+
+    cree_par = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='inventaires_crees')
+    statut = models.CharField(max_length=10, choices=STATUT_CHOICES, default=EN_COURS)
+    date_creation = models.DateTimeField(auto_now_add=True)
+    date_validation = models.DateTimeField(null=True, blank=True)
+    notes = models.TextField(blank=True)
+
+    def __str__(self):
+        return f"Inventaire #{self.id}"
+
+
+class LigneInventaire(models.Model):
+    inventaire = models.ForeignKey(Inventaire, on_delete=models.CASCADE, related_name='lignes')
+    produit = models.ForeignKey(Produit, on_delete=models.PROTECT)
+    # Photo du stock théorique au moment où la ligne est ajoutée à l'inventaire
+    quantite_theorique = models.PositiveIntegerField()
+    # Rempli plus tard, lors du comptage physique réel en boutique
+    quantite_physique = models.PositiveIntegerField(null=True, blank=True)
+
+    @property
+    def ecart(self):
+        if self.quantite_physique is None:
+            return None
+        return self.quantite_physique - self.quantite_theorique
+
+    def __str__(self):
+        return f"{self.produit.nom} (théorique: {self.quantite_theorique})"
+
+
+class Inventaire(models.Model):
+    EN_COURS = 'EN_COURS'
+    VALIDE = 'VALIDE'
+    STATUT_CHOICES = [
+        (EN_COURS, 'En cours'),
+        (VALIDE, 'Validé'),
+    ]
+
+    date_creation = models.DateTimeField(auto_now_add=True)
+    cree_par = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='inventaires_crees')
+    statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default=EN_COURS)
+    date_validation = models.DateTimeField(null=True, blank=True)
+
+    @property
+    def code(self):
+        return f"INV-{self.pk:06d}" if self.pk else "INV-EN COURS"
+
+    def __str__(self):
+        return self.code
+
+
+class LigneInventaire(models.Model):
+    inventaire = models.ForeignKey(Inventaire, on_delete=models.CASCADE, related_name='lignes')
+    produit = models.ForeignKey(Produit, on_delete=models.PROTECT)
+    quantite_theorique = models.IntegerField()
+    quantite_physique = models.IntegerField(null=True, blank=True)
+
+    @property
+    def ecart(self):
+        if self.quantite_physique is None:
+            return None
+        return self.quantite_physique - self.quantite_theorique
+
+    def __str__(self):
+        return f"{self.produit.nom} (théorique {self.quantite_theorique})"

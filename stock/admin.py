@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Categorie, Marque, Produit, MouvementStock
+from .models import Categorie, Marque, Produit, MouvementStock, Inventaire, LigneInventaire
 
 
 @admin.register(Categorie)
@@ -23,3 +23,15 @@ class ProduitAdmin(admin.ModelAdmin):
 class MouvementStockAdmin(admin.ModelAdmin):
     list_display = ['produit', 'type_mouvement', 'quantite', 'date']
     list_filter = ['type_mouvement']
+
+
+class LigneInventaireInline(admin.TabularInline):
+    model = LigneInventaire
+    extra = 0
+
+
+@admin.register(Inventaire)
+class InventaireAdmin(admin.ModelAdmin):
+    list_display = ['code', 'cree_par', 'statut', 'date_creation', 'date_validation']
+    list_filter = ['statut']
+    inlines = [LigneInventaireInline]

@@ -1,7 +1,10 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, permission_required
-from .models import Produit, Categorie, Marque
+from django.contrib import messages
+from django.utils import timezone
+from .models import Produit, Categorie, Marque, MouvementStock, Inventaire, LigneInventaire
 from fournisseurs.models import Fournisseur
+from accounts.notifications import notifier_utilisateur, notifier_administrateurs
 
 
 @login_required
@@ -107,3 +110,91 @@ def categories_marques(request):
         'categories': categories,
         'marques': marques,
     })
+
+
+@login_required
+@permission_required('stock.view_inventaire', raise_exception=True)
+def liste_inventaires(request):
+    inventaires = Inventaire.objects.all().order_by('-date_creation')
+    return render(request, 'stock/liste_inventaires.html', {'inventaires': inventaires})
+
+
+@login_required
+@permission_required('stock.add_inventaire', raise_exception=True)
+def nouvel_inventaire(request):
+    if request.method == 'POST':
+        produit_ids = request.POST.getlist('produits')
+
+        if not produit_ids:
+            messages.error(request, "Sélectionne au moins un produit à inventorier.")
+            return redirect('stock:nouvel_inventaire')
+
+        inventaire = Inventaire.objects.create(cree_par=request.user)
+
+        for produit_id in produit_ids:
+            produit = get_object_or_404(Produit, pk=produit_id)
+            LigneInventaire.objects.create(
+                inventaire=inventaire,
+                produit=produit,
+                quantite_theorique=produit.quantite_stock,
+            )
+
+        messages.success(request, f"Inventaire #{inventaire.id} créé — passe au comptage physique.")
+        return redirect('stock:detail_inventaire', pk=inventaire.pk)
+
+    produits = Produit.objects.all().order_by('nom')
+    return render(request, 'stock/nouvel_inventaire.html', {'produits': produits})
+
+
+@login_required
+@permission_required('stock.view_inventaire', raise_exception=True)
+def detail_inventaire(request, pk):
+    inventaire = get_object_or_404(Inventaire, pk=pk)
+
+    if request.method == 'POST' and inventaire.statut == Inventaire.EN_COURS:
+        if not request.user.has_perm('stock.change_inventaire'):
+            messages.error(request, "Tu n'as pas le droit de modifier cet inventaire.")
+            return redirect('stock:detail_inventaire', pk=inventaire.pk)
+
+        action = request.POST.get('action')
+
+        if action == 'enregistrer_comptage':
+            for ligne in inventaire.lignes.all():
+                valeur = request.POST.get(f'quantite_physique_{ligne.id}')
+                if valeur not in (None, ''):
+                    ligne.quantite_physique = int(valeur)
+                    ligne.save()
+            messages.success(request, "Comptage enregistré.")
+            return redirect('stock:detail_inventaire', pk=inventaire.pk)
+
+        elif action == 'valider':
+            lignes_non_comptees = inventaire.lignes.filter(quantite_physique__isnull=True)
+            if lignes_non_comptees.exists():
+                messages.error(request, "Toutes les lignes doivent être comptées avant de valider l'inventaire.")
+                return redirect('stock:detail_inventaire', pk=inventaire.pk)
+
+            for ligne in inventaire.lignes.all():
+                if ligne.ecart and ligne.ecart != 0:
+                    MouvementStock.objects.create(
+                        produit=ligne.produit,
+                        type_mouvement=MouvementStock.ENTREE if ligne.ecart > 0 else MouvementStock.SORTIE,
+                        quantite=abs(ligne.ecart),
+                        motif=f"Ajustement inventaire #{inventaire.id}",
+                    )
+
+            inventaire.statut = Inventaire.VALIDE
+            inventaire.date_validation = timezone.now()
+            inventaire.save()
+
+            lien = f"/produits/inventaires/{inventaire.pk}/"
+            notifier_utilisateur(request.user, f"Vous avez validé l'inventaire #{inventaire.id}.", lien=lien)
+            notifier_administrateurs(
+                f"{request.user.username} a validé l'inventaire #{inventaire.id} — les stocks ont été ajustés.",
+                lien=lien,
+                exclure=request.user,
+            )
+
+            messages.success(request, f"Inventaire #{inventaire.id} validé — les écarts ont été appliqués au stock.")
+            return redirect('stock:detail_inventaire', pk=inventaire.pk)
+
+    return render(request, 'stock/detail_inventaire.html', {'inventaire': inventaire})
