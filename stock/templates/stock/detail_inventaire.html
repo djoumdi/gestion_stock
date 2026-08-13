@@ -1,0 +1,81 @@
+<!-- stock/templates/stock/detail_inventaire.html -->
+{% extends 'base.html' %}
+
+{% block title %}Inventaire #{{ inventaire.id }} - TechStock{% endblock %}
+
+{% block content %}
+<div class="flex justify-between items-start mb-lg">
+    <div>
+        <div class="text-sm text-secondary flex items-center gap-1 mb-1">
+            <a class="hover:text-primary transition-colors" href="{% url 'stock:liste_inventaires' %}">Inventaires</a>
+            <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+            <span class="text-on-surface font-semibold">#{{ inventaire.id }}</span>
+        </div>
+        <h2 class="text-3xl font-bold text-on-surface">Inventaire #{{ inventaire.id }}</h2>
+        <p class="text-sm text-secondary mt-1">Créé par {{ inventaire.cree_par.username|default:"—" }} le {{ inventaire.date_creation|date:"d/m/Y H:i" }}</p>
+    </div>
+    {% if inventaire.statut == 'VALIDE' %}
+    <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-bold bg-[#D1FAE5] text-[#065F46]">Validé</span>
+    {% else %}
+    <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-bold bg-[#FEF3C7] text-[#92400E]">En cours</span>
+    {% endif %}
+</div>
+
+<form method="POST">
+    {% csrf_token %}
+    <div class="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant overflow-hidden mb-md">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-surface-container-low border-b border-outline-variant">
+                        <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider">Produit</th>
+                        <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider text-right">Stock théorique</th>
+                        <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider text-right">Stock physique compté</th>
+                        <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider text-right">Écart</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ligne in inventaire.lignes.all %}
+                    <tr class="border-b border-outline-variant last:border-0">
+                        <td class="py-3 px-md font-semibold text-on-surface">{{ ligne.produit.nom }}</td>
+                        <td class="py-3 px-md text-right font-mono text-on-surface-variant">{{ ligne.quantite_theorique }}</td>
+                        <td class="py-3 px-md text-right">
+                            {% if inventaire.statut == 'EN_COURS' and perms.stock.change_inventaire %}
+                            <input type="number" name="quantite_physique_{{ ligne.id }}" min="0" value="{{ ligne.quantite_physique|default_if_none:'' }}" class="w-24 bg-surface border border-outline-variant rounded p-1 font-mono text-right focus:border-primary outline-none">
+                            {% else %}
+                            <span class="font-mono text-on-surface">{{ ligne.quantite_physique|default:"—" }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3 px-md text-right font-mono font-bold">
+                            {% if ligne.ecart == None %}
+                            <span class="text-secondary">—</span>
+                            {% elif ligne.ecart == 0 %}
+                            <span class="text-secondary">0</span>
+                            {% elif ligne.ecart > 0 %}
+                            <span class="text-[#065F46]">+{{ ligne.ecart }}</span>
+                            {% else %}
+                            <span class="text-[#991B1B]">{{ ligne.ecart }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" class="py-6 px-md text-center text-secondary">Aucun produit dans cet inventaire</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if inventaire.statut == 'EN_COURS' and perms.stock.change_inventaire %}
+    <div class="flex gap-2">
+        <button type="submit" name="action" value="enregistrer_comptage" class="bg-surface-container-lowest border border-outline-variant text-on-surface font-semibold py-2 px-md rounded-lg hover:bg-surface-container-high transition-colors">
+            Enregistrer le comptage
+        </button>
+        <button type="submit" name="action" value="valider" onclick="return confirm('Valider l\'inventaire ? Les écarts seront appliqués au stock immédiatement, cette action est définitive.');" class="bg-primary-container text-on-primary-container font-semibold py-2 px-md rounded-lg hover:bg-primary hover:text-white transition-colors">
+            Valider l'inventaire
+        </button>
+    </div>
+    <p class="text-xs text-secondary mt-2">Toutes les lignes doivent être comptées avant de pouvoir valider.</p>
+    {% endif %}
+</form>
+{% endblock %}

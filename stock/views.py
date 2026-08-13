@@ -113,6 +113,41 @@ def categories_marques(request):
 
 
 @login_required
+@permission_required('stock.view_mouvementstock', raise_exception=True)
+def historique_mouvements(request):
+    mouvements = MouvementStock.objects.select_related('produit').order_by('-date')
+
+    produit_id = request.GET.get('produit')
+    if produit_id:
+        mouvements = mouvements.filter(produit_id=produit_id)
+
+    type_mouvement = request.GET.get('type')
+    if type_mouvement in (MouvementStock.ENTREE, MouvementStock.SORTIE):
+        mouvements = mouvements.filter(type_mouvement=type_mouvement)
+
+    date_debut = request.GET.get('date_debut')
+    if date_debut:
+        mouvements = mouvements.filter(date__date__gte=date_debut)
+
+    date_fin = request.GET.get('date_fin')
+    if date_fin:
+        mouvements = mouvements.filter(date__date__lte=date_fin)
+
+    from django.core.paginator import Paginator
+    pagination = Paginator(mouvements, 50)
+    page = pagination.get_page(request.GET.get('page'))
+
+    return render(request, 'stock/historique_mouvements.html', {
+        'page_obj': page,
+        'produits': Produit.objects.all().order_by('nom'),
+        'produit_selectionne': produit_id or '',
+        'type_selectionne': type_mouvement or '',
+        'date_debut': date_debut or '',
+        'date_fin': date_fin or '',
+    })
+
+
+@login_required
 @permission_required('stock.view_inventaire', raise_exception=True)
 def liste_inventaires(request):
     inventaires = Inventaire.objects.all().order_by('-date_creation')

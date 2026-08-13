@@ -56,6 +56,13 @@
                 <span class="material-symbols-outlined mr-2">inventory_2</span> Produits
             </a>
         </li>
+        {% if perms.stock.view_inventaire %}
+        <li class="mb-1">
+            <a class="flex items-center {% if request.resolver_match.url_name == 'liste_inventaires' or request.resolver_match.url_name == 'nouvel_inventaire' or request.resolver_match.url_name == 'detail_inventaire' %}bg-primary-container text-on-primary-container font-bold{% else %}text-on-surface-variant hover:bg-surface-container-high{% endif %} mx-2 py-2 px-md rounded-lg transition-colors" href="{% url 'stock:liste_inventaires' %}">
+                <span class="material-symbols-outlined mr-2">fact_check</span> Inventaires
+            </a>
+        </li>
+        {% endif %}
         {% if perms.stock.add_categorie %}
         <li class="mb-1">
             <a class="flex items-center {% if request.resolver_match.url_name == 'categories_marques' %}bg-primary-container text-on-primary-container font-bold{% else %}text-on-surface-variant hover:bg-surface-container-high{% endif %} mx-2 py-2 px-md rounded-lg transition-colors" href="{% url 'stock:categories_marques' %}">

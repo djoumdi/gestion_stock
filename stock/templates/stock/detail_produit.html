@@ -94,6 +94,12 @@
                 {% else %}
                 <span class="inline-block bg-[#D1FAE5] text-[#065F46] text-sm font-bold px-3 py-1 rounded-full">En stock</span>
                 {% endif %}
+
+                {% if perms.stock.view_mouvementstock %}
+                <a href="{% url 'stock:historique_mouvements' %}?produit={{ produit.id }}" class="mt-md flex items-center justify-center gap-2 w-full bg-surface border border-outline-variant rounded-lg py-2 px-md text-sm font-semibold text-on-surface-variant hover:bg-surface-container-high hover:text-primary transition-colors">
+                    <span class="material-symbols-outlined text-[18px]">history</span> Historique des mouvements
+                </a>
+                {% endif %}
             </div>
         </div>
     </div>

@@ -14,6 +14,10 @@ class Vente(models.Model):
         return f"Vente #{self.id} - {self.date_vente.strftime('%d/%m/%Y')}"
 
     @property
+    def code(self):
+        return f"VTE-{self.pk:06d}" if self.pk else "VTE-EN COURS"
+
+    @property
     def total(self):
         return sum(ligne.sous_total for ligne in self.lignes.all())
 
@@ -28,14 +32,13 @@ class LigneVente(models.Model):
     def sous_total(self):
         return self.quantite * self.prix_unitaire
 
+    # Pas de save() qui touche au stock ici : comme pour LigneAchat, le stock est
+    # décrémenté explicitement dans la vue (nouvelle_vente) via MouvementStock,
+    # pour que chaque vente laisse une trace dans l'historique des mouvements.
     def save(self, *args, **kwargs):
         if not self.prix_unitaire:
             self.prix_unitaire = self.produit.prix_vente
-        is_new = self._state.adding
         super().save(*args, **kwargs)
-        if is_new:
-            self.produit.quantite_stock -= self.quantite
-            self.produit.save()
 
     def __str__(self):
         return f"{self.quantite} x {self.produit.nom}"

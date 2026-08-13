@@ -1,0 +1,45 @@
+<!-- stock/templates/stock/nouvel_inventaire.html -->
+{% extends 'base.html' %}
+
+{% block title %}Nouvel inventaire - TechStock{% endblock %}
+
+{% block content %}
+<div class="mb-lg">
+    <h2 class="text-3xl font-bold text-on-surface">Nouvel inventaire</h2>
+    <p class="text-secondary mt-1">Sélectionne les produits à compter physiquement</p>
+</div>
+
+<form method="POST" class="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-sm p-lg max-w-3xl">
+    {% csrf_token %}
+
+    <div class="flex justify-between items-center mb-md">
+        <h3 class="text-sm font-semibold text-secondary uppercase tracking-wider">Produits</h3>
+        <button type="button" onclick="toutCocher()" class="text-primary text-sm font-semibold hover:underline">Tout sélectionner</button>
+    </div>
+
+    <div class="space-y-1 max-h-96 overflow-y-auto border border-outline-variant rounded-lg p-2 mb-lg">
+        {% for produit in produits %}
+        <label class="flex items-center justify-between gap-2 p-2 rounded hover:bg-surface-container-low cursor-pointer">
+            <span class="flex items-center gap-2">
+                <input type="checkbox" name="produits" value="{{ produit.id }}" class="case-produit">
+                <span class="text-sm font-semibold text-on-surface">{{ produit.nom }}</span>
+            </span>
+            <span class="text-xs text-secondary font-mono">Stock actuel : {{ produit.quantite_stock }}</span>
+        </label>
+        {% empty %}
+        <p class="text-sm text-secondary text-center py-4">Aucun produit en base</p>
+        {% endfor %}
+    </div>
+
+    <button type="submit" class="bg-primary-container text-on-primary-container font-semibold py-2 px-lg rounded-lg hover:bg-primary hover:text-white transition-colors">
+        Créer l'inventaire
+    </button>
+    <p class="text-xs text-secondary mt-2">Le stock théorique de chaque produit sera figé au moment de la création — tu pourras ensuite saisir les quantités réellement comptées.</p>
+</form>
+
+<script>
+    function toutCocher() {
+        document.querySelectorAll('.case-produit').forEach(c => c.checked = true);
+    }
+</script>
+{% endblock %}

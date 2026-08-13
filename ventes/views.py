@@ -1,8 +1,10 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
+from django.db import transaction
 from .models import Vente, LigneVente, Facture, Paiement
 from clients.models import Client
-from stock.models import Produit
+from stock.models import Produit, MouvementStock
 
 
 @login_required
@@ -41,22 +43,62 @@ def nouvelle_vente(request):
         else:
             client = None
 
-        vente = Vente.objects.create(client=client, vendeur=request.user)
-
         produit_ids = request.POST.getlist('produit')
         quantites = request.POST.getlist('quantite')
 
+        lignes_demandees = []
         for produit_id, quantite in zip(produit_ids, quantites):
             if produit_id and quantite:
+                try:
+                    quantite = int(quantite)
+                except ValueError:
+                    continue
+                if quantite <= 0:
+                    continue
                 produit = get_object_or_404(Produit, id=produit_id)
+                lignes_demandees.append((produit, quantite))
+
+        if not lignes_demandees:
+            messages.error(request, "Veuillez sélectionner au moins un produit avec une quantité valide.")
+            return redirect('ventes:nouvelle_vente')
+
+        # On vérifie la disponibilité AVANT de créer quoi que ce soit, pour ne jamais
+        # laisser une vente à moitié enregistrée ni faire passer le stock en négatif.
+        # Si un même produit est ajouté sur plusieurs lignes, on cumule les quantités demandées.
+        quantites_cumulees = {}
+        for produit, quantite in lignes_demandees:
+            quantites_cumulees[produit.pk] = quantites_cumulees.get(produit.pk, 0) + quantite
+
+        produits_insuffisants = []
+        for produit_id, quantite_totale in quantites_cumulees.items():
+            produit = next(p for p, _ in lignes_demandees if p.pk == produit_id)
+            if quantite_totale > produit.quantite_stock:
+                produits_insuffisants.append(f"{produit.nom} (demandé {quantite_totale}, disponible {produit.quantite_stock})")
+
+        if produits_insuffisants:
+            messages.error(request, "Stock insuffisant pour : " + ", ".join(produits_insuffisants))
+            return redirect('ventes:nouvelle_vente')
+
+        with transaction.atomic():
+            vente = Vente.objects.create(client=client, vendeur=request.user)
+
+            for produit, quantite in lignes_demandees:
                 LigneVente.objects.create(
                     vente=vente,
                     produit=produit,
-                    quantite=int(quantite),
+                    quantite=quantite,
                     prix_unitaire=produit.prix_vente
                 )
+                MouvementStock.objects.create(
+                    produit=produit,
+                    type_mouvement=MouvementStock.SORTIE,
+                    quantite=quantite,
+                    motif=f"Vente {vente.code}",
+                )
 
-        Facture.objects.create(vente=vente)
+            Facture.objects.create(vente=vente)
+
+        messages.success(request, f"{vente.code} enregistrée avec succès.")
         return redirect('ventes:detail_vente', pk=vente.pk)
 
     return render(request, 'ventes/nouvelle_vente.html', {'produits': produits, 'clients': clients})
