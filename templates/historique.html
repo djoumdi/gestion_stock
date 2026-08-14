@@ -1,0 +1,28 @@
+<!-- templates/historique.html -->
+{% extends 'base.html' %}
+
+{% block title %}Historique des actions - TechStock{% endblock %}
+
+{% block content %}
+<div class="mb-lg">
+    <h2 class="text-3xl font-bold text-on-surface">Historique des actions</h2>
+    <p class="text-sm text-secondary mt-1">Journal des 200 dernières actions effectuées sur le système</p>
+</div>
+
+<div class="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant overflow-hidden max-w-3xl">
+    {% for a in actions %}
+    <a href="{{ a.lien|default:'#' }}" class="flex items-start gap-3 px-lg py-md border-b border-outline-variant last:border-0 hover:bg-surface-container-low transition-colors">
+        <span class="material-symbols-outlined text-primary mt-0.5">history</span>
+        <div>
+            <p class="text-sm text-on-surface">
+                <span class="font-semibold">{{ a.utilisateur|default:"Utilisateur supprimé" }}</span>
+                {{ a.action }}
+            </p>
+            <p class="text-xs text-secondary mt-1">{{ a.date|date:"d/m/Y H:i" }}</p>
+        </div>
+    </a>
+    {% empty %}
+    <p class="text-center text-secondary py-8">Aucune action enregistrée pour le moment</p>
+    {% endfor %}
+</div>
+{% endblock %}

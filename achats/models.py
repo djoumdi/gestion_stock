@@ -1,3 +1,4 @@
+import uuid
 from django.db import models
 from django.conf import settings
 from django.core.validators import MinValueValidator
@@ -21,6 +22,10 @@ class Achat(models.Model):
     notes = models.TextField(blank=True)
     statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default=EN_ATTENTE)
     date_achat = models.DateTimeField(auto_now_add=True)
+    # Jeton pour la page publique du bon de commande envoyée au fournisseur par
+    # WhatsApp, sans exposer l'id interne ni exiger de connexion. Voir Facture.token
+    # pour la même logique côté ventes.
+    token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
 
     @property
     def code(self):

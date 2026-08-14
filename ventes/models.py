@@ -1,4 +1,5 @@
 # ventes/models.py
+import uuid
 from django.db import models
 from django.conf import settings
 from django.core.validators import MinValueValidator
@@ -48,6 +49,11 @@ class Facture(models.Model):
     vente = models.OneToOneField(Vente, on_delete=models.CASCADE, related_name='facture')
     numero = models.CharField(max_length=30, unique=True, blank=True)
     date_emission = models.DateTimeField(auto_now_add=True)
+    # Jeton opaque utilisé pour le lien public envoyé au client (WhatsApp, email...) :
+    # on ne veut surtout pas exposer /ventes/<id>/facture/ qui exige une connexion
+    # et dont l'id est devinable. Ce token permet une page de consultation publique
+    # sans authentification, sans révéler ni l'id interne ni les autres factures.
+    token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)

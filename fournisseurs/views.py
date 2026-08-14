@@ -1,6 +1,8 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, permission_required
+from django.contrib import messages
 from .models import Fournisseur
+from accounts.notifications import enregistrer_action
 
 
 @login_required
@@ -44,3 +46,18 @@ def detail_fournisseur(request, pk):
 
     produits = fournisseur.produits.all()
     return render(request, 'fournisseurs/detail_fournisseur.html', {'fournisseur': fournisseur, 'produits': produits})
+
+
+@login_required
+@permission_required('fournisseurs.delete_fournisseur', raise_exception=True)
+def supprimer_fournisseur(request, pk):
+    fournisseur = get_object_or_404(Fournisseur, pk=pk)
+
+    if request.method == 'POST':
+        nom = fournisseur.nom
+        fournisseur.delete()
+        enregistrer_action(request.user, f"a supprimé le fournisseur « {nom} »")
+        messages.success(request, f"Fournisseur « {nom} » supprimé.")
+        return redirect('fournisseurs:liste_fournisseurs')
+
+    return redirect('fournisseurs:detail_fournisseur', pk=pk)

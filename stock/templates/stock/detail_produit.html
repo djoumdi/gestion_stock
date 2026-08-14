@@ -105,6 +105,19 @@
     </div>
 </form>
 
+{% if perms.stock.delete_produit %}
+<div class="mt-lg bg-surface-container-lowest border border-[#FCA5A5] rounded-lg p-lg shadow-sm max-w-2xl">
+    <h3 class="text-sm font-bold text-[#991B1B] mb-1">Zone dangereuse</h3>
+    <p class="text-sm text-secondary mb-md">La suppression est définitive. Si ce produit a déjà été vendu, acheté ou inventorié, elle sera refusée pour préserver l'historique.</p>
+    <form method="POST" action="{% url 'stock:supprimer_produit' produit.pk %}" onsubmit="return confirm('Supprimer définitivement « {{ produit.nom }} » ?');">
+        {% csrf_token %}
+        <button type="submit" class="flex items-center gap-2 bg-[#FEE2E2] text-[#991B1B] font-semibold py-2 px-md rounded-lg hover:bg-[#991B1B] hover:text-white transition-colors">
+            <span class="material-symbols-outlined text-[18px]">delete</span> Supprimer ce produit
+        </button>
+    </form>
+</div>
+{% endif %}
+
 <script>
     function previsualiserImage(input) {
         if (!input.files || !input.files[0]) return;

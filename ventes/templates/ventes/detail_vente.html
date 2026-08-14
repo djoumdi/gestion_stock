@@ -1,5 +1,6 @@
 <!-- stock/templates/stock/detail_vente.html -->
 {% extends 'base.html' %}
+{% load whatsapp_tags %}
 
 {% block title %}Vente #{{ vente.id }} - TechStock{% endblock %}
 
@@ -14,10 +15,31 @@
         <h2 class="text-3xl font-bold text-on-surface">Vente #{{ vente.id }}</h2>
         <p class="text-sm text-secondary mt-1">Facture {{ facture.numero }}</p>
     </div>
-    <a href="{% url 'ventes:facture_vente' vente.pk %}" target="_blank" class="bg-primary-container text-on-primary-container font-semibold py-2 px-md rounded-lg flex items-center hover:bg-primary hover:text-white transition-colors shadow-sm">
-        <span class="material-symbols-outlined text-[18px] mr-1">receipt_long</span> Générer la facture
+    <div class="flex gap-2">
+        <a href="{% url 'ventes:facture_vente' vente.pk %}" target="_blank" class="bg-surface-container-lowest border border-outline-variant text-on-surface font-semibold py-2 px-md rounded-lg flex items-center hover:bg-surface-container-high transition-colors shadow-sm">
+            <span class="material-symbols-outlined text-[18px] mr-1">receipt_long</span> Aperçu
+        </a>
+        <a href="{% url 'ventes:facture_pdf' vente.pk %}" target="_blank" class="bg-primary-container text-on-primary-container font-semibold py-2 px-md rounded-lg flex items-center hover:bg-primary hover:text-white transition-colors shadow-sm">
+            <span class="material-symbols-outlined text-[18px] mr-1">picture_as_pdf</span> Télécharger le PDF
+        </a>
+    </div>
+</div>
+
+{% lien_whatsapp vente.client.telephone message_whatsapp as url_whatsapp %}
+{% if url_whatsapp %}
+<div class="mb-lg">
+    <a href="{{ url_whatsapp }}" target="_blank" class="inline-flex items-center bg-[#25D366] text-white font-semibold py-2 px-md rounded-lg hover:brightness-95 transition-all shadow-sm">
+        <span class="material-symbols-outlined text-[18px] mr-1">chat</span> Envoyer la facture via WhatsApp
     </a>
 </div>
+{% elif vente.client %}
+<div class="mb-lg">
+    <span class="inline-flex items-center text-sm text-secondary bg-surface-container-low border border-outline-variant rounded-lg py-2 px-md">
+        <span class="material-symbols-outlined text-[18px] mr-1">info</span>
+        Ajoutez un numéro de téléphone à {{ vente.client.nom }} pour pouvoir envoyer la facture par WhatsApp.
+    </span>
+</div>
+{% endif %}
 
 <div class="grid grid-cols-1 md:grid-cols-3 gap-lg mb-lg">
     <div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg shadow-sm">

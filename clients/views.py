@@ -1,6 +1,8 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, permission_required
+from django.contrib import messages
 from .models import Client
+from accounts.notifications import enregistrer_action
 
 
 @login_required
@@ -40,3 +42,18 @@ def detail_client(request, pk):
 
     ventes = client.ventes.all().order_by('-date_vente')
     return render(request, 'clients/detail_client.html', {'client': client, 'ventes': ventes})
+
+
+@login_required
+@permission_required('clients.delete_client', raise_exception=True)
+def supprimer_client(request, pk):
+    client = get_object_or_404(Client, pk=pk)
+
+    if request.method == 'POST':
+        nom = client.nom
+        client.delete()
+        enregistrer_action(request.user, f"a supprimé le client « {nom} »")
+        messages.success(request, f"Client « {nom} » supprimé.")
+        return redirect('clients:liste_clients')
+
+    return redirect('clients:detail_client', pk=pk)

@@ -2,9 +2,13 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.db import transaction
+from django.urls import reverse
+from django.http import FileResponse
 from .models import Vente, LigneVente, Facture, Paiement
+from .pdf import generer_pdf_facture
 from clients.models import Client
 from stock.models import Produit, MouvementStock
+from accounts.notifications import enregistrer_action
 
 
 @login_required
@@ -98,6 +102,8 @@ def nouvelle_vente(request):
 
             Facture.objects.create(vente=vente)
 
+        enregistrer_action(request.user, f"a enregistré la vente {vente.code}", lien=f"/ventes/{vente.pk}/")
+
         messages.success(request, f"{vente.code} enregistrée avec succès.")
         return redirect('ventes:detail_vente', pk=vente.pk)
 
@@ -109,7 +115,21 @@ def nouvelle_vente(request):
 def detail_vente(request, pk):
     vente = get_object_or_404(Vente, pk=pk)
     facture, _ = Facture.objects.get_or_create(vente=vente)
-    return render(request, 'ventes/detail_vente.html', {'vente': vente, 'facture': facture})
+
+    lien_facture = request.build_absolute_uri(
+        reverse('ventes:facture_pdf_publique', args=[facture.token])
+    )
+    message_whatsapp = (
+        f"Bonjour {vente.client.nom if vente.client else ''},\n"
+        f"Voici votre facture {facture.numero} d'un montant de {vente.total} FCFA.\n"
+        f"Téléchargez le PDF ici : {lien_facture}"
+    ).strip()
+
+    return render(request, 'ventes/detail_vente.html', {
+        'vente': vente,
+        'facture': facture,
+        'message_whatsapp': message_whatsapp,
+    })
 
 
 @login_required
@@ -118,6 +138,33 @@ def facture_vente(request, pk):
     vente = get_object_or_404(Vente, pk=pk)
     facture, _ = Facture.objects.get_or_create(vente=vente)
     return render(request, 'ventes/facture_vente.html', {'vente': vente, 'facture': facture})
+
+
+def facture_publique(request, token):
+    """Page de consultation de facture accessible sans connexion, via un lien
+    à usage unique (token opaque) — c'est ce lien qui est envoyé au client par
+    WhatsApp. Volontairement pas de @login_required : le client n'a pas de
+    compte sur l'application."""
+    facture = get_object_or_404(Facture, token=token)
+    return render(request, 'ventes/facture_vente.html', {'vente': facture.vente, 'facture': facture})
+
+
+@login_required
+@permission_required('ventes.view_vente', raise_exception=True)
+def facture_pdf(request, pk):
+    vente = get_object_or_404(Vente, pk=pk)
+    facture, _ = Facture.objects.get_or_create(vente=vente)
+    buffer = generer_pdf_facture(facture)
+    return FileResponse(buffer, as_attachment=False, filename=f"{facture.numero}.pdf")
+
+
+def facture_pdf_publique(request, token):
+    """Téléchargement direct du PDF, sans connexion — c'est ce lien-là qu'on
+    envoie par WhatsApp (le client récupère un vrai fichier, pas juste une
+    page web)."""
+    facture = get_object_or_404(Facture, token=token)
+    buffer = generer_pdf_facture(facture)
+    return FileResponse(buffer, as_attachment=True, filename=f"{facture.numero}.pdf")
 
 
 @login_required
@@ -135,4 +182,5 @@ def enregistrer_paiement(request, pk):
             montant=request.POST.get('montant') or vente.total,
             mode_paiement=request.POST.get('mode_paiement', Paiement.ESPECES),
         )
+        enregistrer_action(request.user, f"a enregistré le paiement de la vente {vente.code}", lien=f"/ventes/{vente.pk}/")
     return redirect('ventes:detail_vente', pk=vente.pk)

@@ -1,15 +1,201 @@
-<!-- stock/templates/stock/tableau_de_bord.html -->
+<!-- rapports/templates/rapports/tableau_de_bord.html -->
 {% extends 'base.html' %}
 
 {% block title %}Tableau de bord - TechStock{% endblock %}
 
 {% block content %}
 <div class="mb-lg">
-    <h2 class="text-3xl font-bold text-on-surface">Tableau de bord</h2>
-    <p class="text-secondary mt-1">Aperçu de l'activité du magasin</p>
+    <h2 class="text-3xl font-bold text-on-surface">Bonjour, {{ utilisateur.first_name|default:utilisateur.username }}</h2>
+    <p class="text-secondary mt-1">
+        {% if role_dashboard == 'vendeur' %}Aperçu de vos ventes
+        {% elif role_dashboard == 'gestionnaire' %}Aperçu du stock et des achats
+        {% elif role_dashboard == 'aucun_role' %}Compte en attente d'un rôle
+        {% else %}Aperçu de l'activité du magasin{% endif %}
+    </p>
 </div>
 
-<!-- KPIs -->
+{% if role_dashboard == 'aucun_role' %}
+<!-- ==================== AUCUN RÔLE ASSIGNÉ ==================== -->
+<div class="max-w-lg mx-auto text-center bg-surface-container-lowest border border-outline-variant rounded-xl p-xl shadow-sm mt-xl">
+    <span class="material-symbols-outlined text-5xl text-secondary mb-md">lock_person</span>
+    <h3 class="text-lg font-bold text-on-surface mb-2">Aucun rôle assigné à ce compte</h3>
+    <p class="text-sm text-secondary">Ton compte est actif, mais aucun rôle (Vendeur, Gestionnaire de stock, Responsable ou Administrateur) ne lui a encore été attribué. Contacte un administrateur pour qu'il t'en assigne un depuis la page Utilisateurs.</p>
+</div>
+
+{% elif role_dashboard == 'vendeur' %}
+<!-- ==================== TABLEAU DE BORD VENDEUR ==================== -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-md mb-lg">
+    <div class="bg-surface-container-lowest p-md rounded-xl border border-outline-variant shadow-sm">
+        <div class="w-10 h-10 rounded bg-primary-container/20 flex items-center justify-center text-primary mb-3">
+            <span class="material-symbols-outlined">payments</span>
+        </div>
+        <h3 class="text-xs font-semibold text-secondary uppercase tracking-wider mb-1">Mes ventes aujourd'hui</h3>
+        <span class="text-2xl font-bold text-on-surface font-mono">{{ mes_ventes_jour_montant }} FCFA</span>
+    </div>
+    <div class="bg-surface-container-lowest p-md rounded-xl border border-outline-variant shadow-sm">
+        <div class="w-10 h-10 rounded bg-primary-container/20 flex items-center justify-center text-primary mb-3">
+            <span class="material-symbols-outlined">point_of_sale</span>
+        </div>
+        <h3 class="text-xs font-semibold text-secondary uppercase tracking-wider mb-1">Nombre de ventes aujourd'hui</h3>
+        <span class="text-2xl font-bold text-on-surface">{{ mes_ventes_jour_nombre }}</span>
+    </div>
+    <div class="bg-surface-container-lowest p-md rounded-xl border border-outline-variant shadow-sm">
+        <div class="w-10 h-10 rounded bg-primary-container/20 flex items-center justify-center text-primary mb-3">
+            <span class="material-symbols-outlined">calendar_month</span>
+        </div>
+        <h3 class="text-xs font-semibold text-secondary uppercase tracking-wider mb-1">Mes ventes ce mois</h3>
+        <span class="text-2xl font-bold text-on-surface font-mono">{{ mes_ventes_mois_montant }} FCFA</span>
+    </div>
+    <div class="bg-surface-container-lowest p-md rounded-xl border border-outline-variant shadow-sm">
+        <div class="w-10 h-10 rounded bg-primary-container/20 flex items-center justify-center text-primary mb-3">
+            <span class="material-symbols-outlined">receipt_long</span>
+        </div>
+        <h3 class="text-xs font-semibold text-secondary uppercase tracking-wider mb-1">Nombre de ventes ce mois</h3>
+        <span class="text-2xl font-bold text-on-surface">{{ mes_ventes_mois_nombre }}</span>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-lg">
+    <div class="lg:col-span-2 bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant overflow-hidden">
+        <div class="p-lg border-b border-outline-variant flex justify-between items-center">
+            <h3 class="text-lg font-bold">Mes dernières ventes</h3>
+            <a href="{% url 'ventes:nouvelle_vente' %}" class="text-sm font-semibold text-primary hover:underline">+ Nouvelle vente</a>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-surface-container-low border-b border-outline-variant">
+                        <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider">N°</th>
+                        <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider">Client</th>
+                        <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider">Date</th>
+                        <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider text-right">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for vente in mes_dernieres_ventes %}
+                    <tr onclick="window.location='{% url 'ventes:detail_vente' vente.pk %}'" class="cursor-pointer border-b border-outline-variant hover:bg-surface-container-low transition-colors last:border-0">
+                        <td class="py-3 px-md font-mono text-secondary">#{{ vente.id }}</td>
+                        <td class="py-3 px-md font-semibold text-on-surface">{{ vente.client|default:"Client anonyme" }}</td>
+                        <td class="py-3 px-md text-on-surface-variant">{{ vente.date_vente|date:"d/m/Y H:i" }}</td>
+                        <td class="py-3 px-md text-right font-mono font-bold text-on-surface">{{ vente.total }} FCFA</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" class="py-6 px-md text-center text-secondary">Vous n'avez pas encore enregistré de vente</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="bg-surface-container-lowest p-lg rounded-xl border border-outline-variant shadow-sm">
+        <h3 class="text-lg font-bold mb-md">Produits en rupture</h3>
+        <p class="text-xs text-secondary mb-3">À ne pas proposer en vente pour le moment</p>
+        <div class="space-y-2">
+            {% for produit in produits_en_rupture %}
+            <div class="flex justify-between items-center py-2 border-b border-outline-variant last:border-0">
+                <span class="text-sm font-semibold">{{ produit.nom }}</span>
+                <span class="text-xs font-bold px-2 py-1 rounded-full bg-[#FEE2E2] text-[#991B1B]">Rupture</span>
+            </div>
+            {% empty %}
+            <p class="text-sm text-secondary">Aucun produit en rupture</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+{% elif role_dashboard == 'gestionnaire' %}
+<!-- ==================== TABLEAU DE BORD GESTIONNAIRE DE STOCK ==================== -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-md mb-lg">
+    <div class="bg-surface-container-lowest p-md rounded-xl border border-outline-variant shadow-sm">
+        <div class="w-10 h-10 rounded bg-primary-container/20 flex items-center justify-center text-primary mb-3">
+            <span class="material-symbols-outlined">inventory_2</span>
+        </div>
+        <h3 class="text-xs font-semibold text-secondary uppercase tracking-wider mb-1">Valeur du stock</h3>
+        <span class="text-2xl font-bold text-on-surface font-mono">{{ valeur_stock }} FCFA</span>
+    </div>
+    <div class="bg-surface-container-lowest p-md rounded-xl border border-outline-variant shadow-sm">
+        <div class="w-10 h-10 rounded bg-[#FEF3C7] flex items-center justify-center text-[#92400E] mb-3">
+            <span class="material-symbols-outlined">warning</span>
+        </div>
+        <h3 class="text-xs font-semibold text-secondary uppercase tracking-wider mb-1">Produits en alerte</h3>
+        <span class="text-2xl font-bold text-on-surface">{{ produits_en_alerte|length }}</span>
+    </div>
+    <div class="bg-surface-container-lowest p-md rounded-xl border border-outline-variant shadow-sm">
+        <div class="w-10 h-10 rounded bg-primary-container/20 flex items-center justify-center text-primary mb-3">
+            <span class="material-symbols-outlined">shopping_cart</span>
+        </div>
+        <h3 class="text-xs font-semibold text-secondary uppercase tracking-wider mb-1">Achats en attente</h3>
+        <span class="text-2xl font-bold text-on-surface">{{ nb_achats_en_attente }}</span>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-lg mb-lg">
+    <div class="bg-surface-container-lowest p-lg rounded-xl border border-outline-variant shadow-sm">
+        <h3 class="text-lg font-bold mb-md">Stock faible / rupture</h3>
+        <div class="space-y-2">
+            {% for produit in produits_en_alerte %}
+            <a href="{% url 'stock:detail_produit' produit.pk %}" class="flex justify-between items-center py-2 border-b border-outline-variant last:border-0 hover:text-primary transition-colors">
+                <span class="text-sm font-semibold">{{ produit.nom }}</span>
+                <span class="text-xs font-bold px-2 py-1 rounded-full {% if produit.quantite_stock == 0 %}bg-[#FEE2E2] text-[#991B1B]{% else %}bg-[#FEF3C7] text-[#92400E]{% endif %}">{{ produit.quantite_stock }}</span>
+            </a>
+            {% empty %}
+            <p class="text-sm text-secondary">Aucun produit en alerte</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="bg-surface-container-lowest p-lg rounded-xl border border-outline-variant shadow-sm">
+        <h3 class="text-lg font-bold mb-md">Derniers mouvements de stock</h3>
+        <div class="space-y-2">
+            {% for mvt in derniers_mouvements %}
+            <div class="flex justify-between items-center py-2 border-b border-outline-variant last:border-0">
+                <div>
+                    <span class="text-sm font-semibold">{{ mvt.produit.nom }}</span>
+                    <div class="text-xs text-secondary">{{ mvt.motif }}</div>
+                </div>
+                <span class="text-xs font-bold px-2 py-1 rounded-full {% if mvt.type_mouvement == 'entree' %}bg-[#D1FAE5] text-[#065F46]{% else %}bg-[#FEE2E2] text-[#991B1B]{% endif %}">
+                    {% if mvt.type_mouvement == 'entree' %}+{% else %}-{% endif %}{{ mvt.quantite }}
+                </span>
+            </div>
+            {% empty %}
+            <p class="text-sm text-secondary">Aucun mouvement récent</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant overflow-hidden">
+    <div class="p-lg border-b border-outline-variant">
+        <h3 class="text-lg font-bold">Achats en attente / commandés</h3>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-surface-container-low border-b border-outline-variant">
+                    <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider">Réf.</th>
+                    <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider">Fournisseur</th>
+                    <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider">Statut</th>
+                    <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider text-right">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for achat in achats_en_attente %}
+                <tr onclick="window.location='{% url 'achats:detail_achat' achat.pk %}'" class="cursor-pointer border-b border-outline-variant hover:bg-surface-container-low transition-colors last:border-0">
+                    <td class="py-3 px-md font-mono text-secondary">{{ achat.code }}</td>
+                    <td class="py-3 px-md font-semibold text-on-surface">{{ achat.fournisseur|default:"—" }}</td>
+                    <td class="py-3 px-md text-on-surface-variant">{{ achat.get_statut_display }}</td>
+                    <td class="py-3 px-md text-right font-mono font-bold text-on-surface">{{ achat.total }} FCFA</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="py-6 px-md text-center text-secondary">Aucun achat en attente</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% else %}
+<!-- ==================== TABLEAU DE BORD ADMINISTRATEUR / RESPONSABLE ==================== -->
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-md mb-lg">
     <div class="bg-surface-container-lowest p-md rounded-xl border border-outline-variant shadow-sm">
         <div class="w-10 h-10 rounded bg-primary-container/20 flex items-center justify-center text-primary mb-3">
@@ -45,7 +231,6 @@
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-lg mb-lg">
-    <!-- Graphique -->
     <div class="lg:col-span-2 bg-surface-container-lowest p-lg rounded-xl border border-outline-variant shadow-sm">
         <h3 class="text-lg font-bold mb-md">Ventes des 7 derniers jours</h3>
         <div class="h-64">
@@ -53,7 +238,6 @@
         </div>
     </div>
 
-    <!-- Produits en alerte -->
     <div class="bg-surface-container-lowest p-lg rounded-xl border border-outline-variant shadow-sm">
         <h3 class="text-lg font-bold mb-md">Stock faible</h3>
         <div class="space-y-2">
@@ -69,7 +253,6 @@
     </div>
 </div>
 
-<!-- Dernières ventes -->
 <div class="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant overflow-hidden">
     <div class="p-lg border-b border-outline-variant">
         <h3 class="text-lg font-bold">Dernières ventes</h3>
@@ -132,4 +315,5 @@
         }
     });
 </script>
+{% endif %}
 {% endblock %}

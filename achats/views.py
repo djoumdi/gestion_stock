@@ -2,13 +2,14 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.db import transaction
-from django.http import JsonResponse
+from django.http import JsonResponse, FileResponse
 from django.urls import reverse
 
 from .models import Achat, LigneAchat
+from .pdf import generer_pdf_bon_commande
 from stock.models import Produit, MouvementStock
 from fournisseurs.models import Fournisseur
-from accounts.notifications import notifier_utilisateur, notifier_administrateurs
+from accounts.notifications import notifier_utilisateur, notifier_administrateurs, enregistrer_action
 
 
 @login_required
@@ -59,6 +60,7 @@ def nouvel_achat(request):
                     lien=lien,
                     exclure=request.user,
                 )
+                enregistrer_action(request.user, f"a créé l'achat {achat.code} auprès de {fournisseur.nom}", lien=lien)
 
                 messages.success(request, f"Achat {achat.code} enregistré avec succès.")
                 return redirect('achats:detail_achat', pk=achat.pk)
@@ -80,7 +82,44 @@ def nouvel_achat(request):
 @permission_required('achats.view_achat', raise_exception=True)
 def detail_achat(request, pk):
     achat = get_object_or_404(Achat.objects.prefetch_related('lignes__produit'), pk=pk)
-    return render(request, 'achats/detail_achat.html', {'achat': achat})
+
+    lien_bon_commande = request.build_absolute_uri(
+        reverse('achats:bon_commande_pdf_public', args=[achat.token])
+    )
+    message_whatsapp = (
+        f"Bonjour {achat.fournisseur.nom if achat.fournisseur else ''},\n"
+        f"Voici le bon de commande {achat.code} d'un montant de {achat.total} FCFA.\n"
+        f"Téléchargez le PDF ici : {lien_bon_commande}"
+    ).strip()
+
+    return render(request, 'achats/detail_achat.html', {
+        'achat': achat,
+        'message_whatsapp': message_whatsapp,
+    })
+
+
+def bon_commande_public(request, token):
+    """Page de consultation du bon de commande accessible sans connexion, via
+    un lien à usage unique (token opaque) envoyé au fournisseur par WhatsApp.
+    Pas de @login_required : le fournisseur n'a pas de compte sur l'application."""
+    achat = get_object_or_404(Achat.objects.prefetch_related('lignes__produit'), token=token)
+    return render(request, 'achats/bon_commande.html', {'achat': achat})
+
+
+@login_required
+@permission_required('achats.view_achat', raise_exception=True)
+def bon_commande_pdf(request, pk):
+    achat = get_object_or_404(Achat.objects.prefetch_related('lignes__produit'), pk=pk)
+    buffer = generer_pdf_bon_commande(achat)
+    return FileResponse(buffer, as_attachment=False, filename=f"{achat.code}.pdf")
+
+
+def bon_commande_pdf_public(request, token):
+    """Téléchargement direct du PDF, sans connexion — c'est ce lien-là qu'on
+    envoie par WhatsApp."""
+    achat = get_object_or_404(Achat.objects.prefetch_related('lignes__produit'), token=token)
+    buffer = generer_pdf_bon_commande(achat)
+    return FileResponse(buffer, as_attachment=True, filename=f"{achat.code}.pdf")
 
 
 @login_required
@@ -111,6 +150,7 @@ def valider_reception(request, pk):
                 lien=lien,
                 exclure=request.user,
             )
+            enregistrer_action(request.user, f"a validé la réception de l'achat {achat.code} (stock mis à jour)", lien=lien)
 
             messages.success(request, f"L'achat {achat.code} a été marqué comme reçu et les stocks ont été mis à jour.")
 
@@ -150,6 +190,7 @@ def modifier_statut_achat(request, pk):
                     lien=lien,
                     exclure=request.user,
                 )
+                enregistrer_action(request.user, f"a changé le statut de l'achat {achat.code} en « {achat.get_statut_display()} »", lien=lien)
 
             return JsonResponse({'status': 'success', 'statut': achat.statut})
 

@@ -1,0 +1,99 @@
+<!-- templates/utilisateurs/detail_utilisateur.html -->
+{% extends 'base.html' %}
+
+{% block title %}{{ utilisateur.username }} - TechStock{% endblock %}
+
+{% block content %}
+<div class="mb-lg">
+    <div class="text-sm text-secondary flex items-center gap-1">
+        <a class="hover:text-primary transition-colors" href="{% url 'accounts:liste_utilisateurs' %}">Utilisateurs</a>
+        <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+        <span class="text-on-surface font-semibold">{{ utilisateur.username }}</span>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-lg">
+    <div class="lg:col-span-2 space-y-lg">
+        <div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg shadow-sm">
+            <h2 class="text-lg font-bold mb-md">Informations du compte</h2>
+            <form method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="modifier">
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-lg mb-lg">
+                    <div>
+                        <label class="block text-xs font-semibold text-secondary mb-1">Nom d'utilisateur</label>
+                        <input class="w-full bg-surface-container-low border border-outline-variant rounded p-2 text-on-surface-variant" type="text" value="{{ utilisateur.username }}" disabled>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-secondary mb-1">Rôle</label>
+                        <select name="groupe" class="w-full bg-surface border border-outline-variant rounded p-2 focus:border-primary outline-none">
+                            <option value="">-- Aucun --</option>
+                            {% for groupe in groupes %}
+                            <option value="{{ groupe.id }}" {% if groupe_actuel and groupe_actuel.id == groupe.id %}selected{% endif %}>{{ groupe.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-lg mb-lg">
+                    <div>
+                        <label class="block text-xs font-semibold text-secondary mb-1">Prénom</label>
+                        <input name="first_name" class="w-full bg-surface border border-outline-variant rounded p-2 focus:border-primary outline-none" type="text" value="{{ utilisateur.first_name }}">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-secondary mb-1">Nom</label>
+                        <input name="last_name" class="w-full bg-surface border border-outline-variant rounded p-2 focus:border-primary outline-none" type="text" value="{{ utilisateur.last_name }}">
+                    </div>
+                </div>
+
+                <div class="mb-lg">
+                    <label class="block text-xs font-semibold text-secondary mb-1">Email</label>
+                    <input name="email" class="w-full bg-surface border border-outline-variant rounded p-2 focus:border-primary outline-none" type="email" value="{{ utilisateur.email }}">
+                </div>
+
+                <button type="submit" class="bg-primary-container text-on-primary-container font-semibold py-2 px-md rounded-lg hover:bg-primary hover:text-white transition-colors">
+                    Enregistrer les modifications
+                </button>
+            </form>
+        </div>
+
+        <div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg shadow-sm">
+            <h3 class="text-sm font-bold mb-1">Réinitialiser le mot de passe</h3>
+            <p class="text-sm text-secondary mb-md">Définit un nouveau mot de passe immédiatement pour ce compte.</p>
+            <form method="POST" class="flex flex-col md:flex-row gap-3" onsubmit="return confirm('Réinitialiser le mot de passe de « {{ utilisateur.username }} » ?');">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="reinitialiser_mot_de_passe">
+                <input name="nouveau_mot_de_passe" class="flex-1 bg-surface border border-outline-variant rounded p-2 focus:border-primary outline-none" type="password" placeholder="Nouveau mot de passe" required>
+                <button type="submit" class="bg-surface border border-outline-variant rounded-lg py-2 px-md text-sm font-semibold text-on-surface-variant hover:bg-surface-container-high hover:text-primary transition-colors whitespace-nowrap">
+                    Réinitialiser
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="space-y-lg">
+        <div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg shadow-sm">
+            <h3 class="text-sm font-bold mb-md">Statut du compte</h3>
+            {% if utilisateur.is_active %}
+            <span class="inline-block bg-[#D1FAE5] text-[#065F46] text-sm font-bold px-3 py-1 rounded-full mb-md">Actif</span>
+            {% else %}
+            <span class="inline-block bg-[#FEE2E2] text-[#991B1B] text-sm font-bold px-3 py-1 rounded-full mb-md">Désactivé</span>
+            {% endif %}
+
+            {% if utilisateur.pk != request.user.pk %}
+            <form method="POST" onsubmit="return confirm('{% if utilisateur.is_active %}Désactiver{% else %}Réactiver{% endif %} le compte « {{ utilisateur.username }} » ?');">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="basculer_actif">
+                <button type="submit" class="w-full flex items-center justify-center gap-2 {% if utilisateur.is_active %}bg-[#FEE2E2] text-[#991B1B] hover:bg-[#991B1B]{% else %}bg-[#D1FAE5] text-[#065F46] hover:bg-[#065F46]{% endif %} font-semibold py-2 px-md rounded-lg hover:text-white transition-colors">
+                    <span class="material-symbols-outlined text-[18px]">{% if utilisateur.is_active %}block{% else %}check_circle{% endif %}</span>
+                    {% if utilisateur.is_active %}Désactiver{% else %}Réactiver{% endif %}
+                </button>
+            </form>
+            {% else %}
+            <p class="text-xs text-secondary">Tu ne peux pas désactiver ton propre compte.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

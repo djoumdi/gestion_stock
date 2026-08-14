@@ -138,3 +138,8 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 
  
+# Indicatif pays utilise pour transformer un numero local en format
+# international requis par les liens WhatsApp (wa.me).
+# 237 = Cameroun. Les numeros mobiles camerounais s'ecrivent sur 9 chiffres
+# sans 0 de tete (ex : 699887766) -> devient 237699887766 pour wa.me.
+WHATSAPP_INDICATIF_PAYS = '237'

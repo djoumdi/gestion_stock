@@ -1,10 +1,11 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib import messages
+from django.db.models import ProtectedError
 from django.utils import timezone
 from .models import Produit, Categorie, Marque, MouvementStock, Inventaire, LigneInventaire
 from fournisseurs.models import Fournisseur
-from accounts.notifications import notifier_utilisateur, notifier_administrateurs
+from accounts.notifications import notifier_utilisateur, notifier_administrateurs, enregistrer_action
 
 
 @login_required
@@ -42,12 +43,26 @@ def ajouter_produit(request):
             fournisseur_id=fournisseur_id if fournisseur_id else None,
             prix_achat=request.POST.get('prix_achat'),
             prix_vente=request.POST.get('prix_vente'),
-            quantite_stock=request.POST.get('quantite_stock') or 0,
             seuil_alerte=request.POST.get('seuil_alerte') or 5,
         )
+        # quantite_stock reste à 0 (valeur par défaut du modèle) : on ne la
+        # fixe jamais directement. Un stock de départ éventuel passe par un
+        # MouvementStock ENTREE, comme n'importe quel autre mouvement — c'est
+        # ce qui garantit que quantite_stock == somme des mouvements à tout moment.
         if request.FILES.get('image'):
             produit.image = request.FILES['image']
             produit.save()
+
+        quantite_initiale = int(request.POST.get('quantite_stock') or 0)
+        if quantite_initiale > 0:
+            MouvementStock.objects.create(
+                produit=produit,
+                type_mouvement=MouvementStock.ENTREE,
+                quantite=quantite_initiale,
+                motif="Stock initial à la création du produit",
+            )
+
+        enregistrer_action(request.user, f"a ajouté le produit « {produit.nom} »", lien=f"/produits/{produit.pk}/")
 
         return redirect('stock:detail_produit', pk=produit.pk)
 
@@ -79,6 +94,29 @@ def detail_produit(request, pk):
         'produit': produit,
         'marques': Marque.objects.all(),
     })
+
+
+@login_required
+@permission_required('stock.delete_produit', raise_exception=True)
+def supprimer_produit(request, pk):
+    produit = get_object_or_404(Produit, pk=pk)
+
+    if request.method == 'POST':
+        nom = produit.nom
+        try:
+            produit.delete()
+        except ProtectedError:
+            messages.error(
+                request,
+                f"Impossible de supprimer « {nom} » : il est référencé dans des ventes, achats ou inventaires existants."
+            )
+            return redirect('stock:detail_produit', pk=pk)
+
+        enregistrer_action(request.user, f"a supprimé le produit « {nom} »")
+        messages.success(request, f"Produit « {nom} » supprimé.")
+        return redirect('stock:liste_produits')
+
+    return redirect('stock:detail_produit', pk=pk)
 
 
 @login_required
@@ -174,6 +212,8 @@ def nouvel_inventaire(request):
                 quantite_theorique=produit.quantite_stock,
             )
 
+        enregistrer_action(request.user, f"a créé l'inventaire #{inventaire.id}", lien=f"/produits/inventaires/{inventaire.pk}/")
+
         messages.success(request, f"Inventaire #{inventaire.id} créé — passe au comptage physique.")
         return redirect('stock:detail_inventaire', pk=inventaire.pk)
 
@@ -228,6 +268,7 @@ def detail_inventaire(request, pk):
                 lien=lien,
                 exclure=request.user,
             )
+            enregistrer_action(request.user, f"a validé l'inventaire #{inventaire.id} (ajustements de stock appliqués)", lien=lien)
 
             messages.success(request, f"Inventaire #{inventaire.id} validé — les écarts ont été appliqués au stock.")
             return redirect('stock:detail_inventaire', pk=inventaire.pk)

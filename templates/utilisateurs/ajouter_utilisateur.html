@@ -1,0 +1,61 @@
+<!-- templates/utilisateurs/ajouter_utilisateur.html -->
+{% extends 'base.html' %}
+
+{% block title %}Nouvel utilisateur - TechStock{% endblock %}
+
+{% block content %}
+<div class="mb-lg">
+    <div class="text-sm text-secondary flex items-center gap-1">
+        <a class="hover:text-primary transition-colors" href="{% url 'accounts:liste_utilisateurs' %}">Utilisateurs</a>
+        <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+        <span class="text-on-surface font-semibold">Nouvel utilisateur</span>
+    </div>
+</div>
+
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg shadow-sm max-w-2xl">
+    <form method="POST">
+        {% csrf_token %}
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-lg mb-lg">
+            <div>
+                <label class="block text-xs font-semibold text-secondary mb-1">Nom d'utilisateur</label>
+                <input name="username" class="w-full bg-surface border border-outline-variant rounded p-2 focus:border-primary outline-none" type="text" required>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-secondary mb-1">Rôle</label>
+                <select name="groupe" class="w-full bg-surface border border-outline-variant rounded p-2 focus:border-primary outline-none">
+                    <option value="">-- Aucun --</option>
+                    {% for groupe in groupes %}
+                    <option value="{{ groupe.id }}">{{ groupe.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-lg mb-lg">
+            <div>
+                <label class="block text-xs font-semibold text-secondary mb-1">Prénom</label>
+                <input name="first_name" class="w-full bg-surface border border-outline-variant rounded p-2 focus:border-primary outline-none" type="text">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-secondary mb-1">Nom</label>
+                <input name="last_name" class="w-full bg-surface border border-outline-variant rounded p-2 focus:border-primary outline-none" type="text">
+            </div>
+        </div>
+
+        <div class="mb-lg">
+            <label class="block text-xs font-semibold text-secondary mb-1">Email</label>
+            <input name="email" class="w-full bg-surface border border-outline-variant rounded p-2 focus:border-primary outline-none" type="email">
+        </div>
+
+        <div class="mb-lg">
+            <label class="block text-xs font-semibold text-secondary mb-1">Mot de passe initial</label>
+            <input name="password" class="w-full bg-surface border border-outline-variant rounded p-2 focus:border-primary outline-none" type="password" required>
+        </div>
+
+        <button type="submit" class="bg-primary-container text-on-primary-container font-semibold py-2 px-md rounded-lg hover:bg-primary hover:text-white transition-colors">
+            Créer le compte
+        </button>
+    </form>
+</div>
+{% endblock %}

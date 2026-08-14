@@ -17,6 +17,9 @@ class ProduitAdmin(admin.ModelAdmin):
     list_display = ['nom', 'image', 'marque', 'fournisseur', 'categorie', 'prix_achat', 'prix_vente', 'quantite_stock', 'en_alerte']
     list_filter = ['categorie', 'marque', 'fournisseur']
     search_fields = ['nom', 'marque__nom']
+    # quantite_stock ne doit jamais être modifiée à la main : seuls les
+    # MouvementStock (achats, ventes, ajustements d'inventaire) la font varier.
+    readonly_fields = ['quantite_stock']
 
 
 @admin.register(MouvementStock)

@@ -1,5 +1,6 @@
 <!-- achats/templates/achats/detail_achat.html -->
 {% extends 'base.html' %}
+{% load whatsapp_tags %}
 
 {% block title %}{{ achat.code }} - TechStock{% endblock %}
 
@@ -22,6 +23,29 @@
     </form>
     {% endif %}
 </div>
+
+{% lien_whatsapp achat.fournisseur.telephone message_whatsapp as url_whatsapp %}
+<div class="mb-lg flex items-center gap-3">
+    <a href="{% url 'achats:bon_commande_public' achat.token %}" target="_blank" class="bg-surface-container-lowest border border-outline-variant text-on-surface font-semibold py-2 px-md rounded-lg flex items-center hover:bg-surface-container-high transition-colors shadow-sm">
+        <span class="material-symbols-outlined text-[18px] mr-1">description</span> Aperçu
+    </a>
+    <a href="{% url 'achats:bon_commande_pdf' achat.pk %}" target="_blank" class="bg-surface-container-lowest border border-outline-variant text-on-surface font-semibold py-2 px-md rounded-lg flex items-center hover:bg-surface-container-high transition-colors shadow-sm">
+        <span class="material-symbols-outlined text-[18px] mr-1">picture_as_pdf</span> Télécharger le PDF
+    </a>
+    {% if url_whatsapp %}
+    <a href="{{ url_whatsapp }}" target="_blank" class="inline-flex items-center bg-[#25D366] text-white font-semibold py-2 px-md rounded-lg hover:brightness-95 transition-all shadow-sm">
+        <span class="material-symbols-outlined text-[18px] mr-1">chat</span> Envoyer via WhatsApp
+    </a>
+    {% endif %}
+</div>
+{% if not url_whatsapp and achat.fournisseur %}
+<div class="mb-lg">
+    <span class="inline-flex items-center text-sm text-secondary bg-surface-container-low border border-outline-variant rounded-lg py-2 px-md">
+        <span class="material-symbols-outlined text-[18px] mr-1">info</span>
+        Ajoutez un numéro de téléphone à {{ achat.fournisseur.nom }} pour pouvoir envoyer le bon de commande par WhatsApp.
+    </span>
+</div>
+{% endif %}
 
 <div class="grid grid-cols-1 md:grid-cols-4 gap-lg mb-lg">
     <div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg shadow-sm">
