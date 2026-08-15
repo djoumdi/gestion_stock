@@ -1,7 +1,7 @@
 <!-- stock/templates/stock/liste_produits.html -->
 {% extends 'base.html' %}
 
-{% block title %}Produits - TechStock{% endblock %}
+{% block title %}Produits - {{ config_magasin.nom_magasin }}{% endblock %}
 
 {% block content %}
 <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-md gap-sm">
@@ -15,9 +15,19 @@
             <span class="material-symbols-outlined text-[18px] mr-1">history</span> Historique des mouvements
         </a>
         {% endif %}
+        <a href="{% url 'stock:exporter_produits' %}" class="bg-surface-container-lowest border border-outline-variant text-on-surface font-semibold py-2 px-md rounded-lg flex items-center hover:bg-surface-container-high transition-colors shadow-sm">
+            <span class="material-symbols-outlined text-[18px] mr-1">download</span> Exporter
+        </a>
+        {% if perms.stock.add_produit %}
+        <a href="{% url 'stock:importer_produits' %}" class="bg-surface-container-lowest border border-outline-variant text-on-surface font-semibold py-2 px-md rounded-lg flex items-center hover:bg-surface-container-high transition-colors shadow-sm">
+            <span class="material-symbols-outlined text-[18px] mr-1">upload</span> Importer
+        </a>
+        {% endif %}
+        {% if perms.stock.add_produit %}
         <a href="{% url 'stock:ajouter_produit' %}" class="bg-primary-container text-on-primary-container font-semibold py-2 px-md rounded-lg flex items-center hover:bg-primary hover:text-white transition-colors shadow-sm">
             <span class="material-symbols-outlined text-[18px] mr-1">add</span> Ajouter un produit
         </a>
+        {% endif %}
     </div>
 </div>
 
@@ -41,6 +51,7 @@
             <thead>
                 <tr class="bg-surface-container-low border-b border-outline-variant">
                     <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider">Image</th>
+                    <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider">Réf.</th>
                     <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider">Nom</th>
                     <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider">Marque</th>
                     <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider">Catégorie</th>
@@ -62,6 +73,7 @@
                         </div>
                         {% endif %}
                     </td>
+                    <td class="py-3 px-md font-mono text-xs text-secondary">{{ produit.reference }}</td>
                     <td class="py-3 px-md font-semibold text-on-surface">{{ produit.nom }}</td>
                     <td class="py-3 px-md text-on-surface-variant">{{ produit.marque|default:"—" }}</td>
                     <td class="py-3 px-md text-on-surface-variant">{{ produit.categorie|default:"—" }}</td>
@@ -77,7 +89,7 @@
                     </td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="6" class="py-6 px-md text-center text-secondary">Aucun produit pour le moment</td></tr>
+                <tr><td colspan="7" class="py-6 px-md text-center text-secondary">Aucun produit pour le moment</td></tr>
                 {% endfor %}
             </tbody>
         </table>

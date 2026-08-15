@@ -1,7 +1,7 @@
 <!-- stock/templates/stock/detail_inventaire.html -->
 {% extends 'base.html' %}
 
-{% block title %}Inventaire #{{ inventaire.id }} - TechStock{% endblock %}
+{% block title %}Inventaire #{{ inventaire.id }} - {{ config_magasin.nom_magasin }}{% endblock %}
 
 {% block content %}
 <div class="flex justify-between items-start mb-lg">

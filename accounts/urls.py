@@ -12,4 +12,6 @@ urlpatterns = [
     path('utilisateurs/', views.liste_utilisateurs, name='liste_utilisateurs'),
     path('utilisateurs/ajouter/', views.ajouter_utilisateur, name='ajouter_utilisateur'),
     path('utilisateurs/<int:pk>/', views.detail_utilisateur, name='detail_utilisateur'),
+    path('mon-compte/', views.mon_compte, name='mon_compte'),
+    path('mon-compte/theme/', views.definir_theme, name='definir_theme'),
 ]

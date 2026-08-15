@@ -1,7 +1,7 @@
 <!-- stock/templates/stock/liste_fournisseurs.html -->
 {% extends 'base.html' %}
 
-{% block title %}Fournisseurs - TechStock{% endblock %}
+{% block title %}Fournisseurs - {{ config_magasin.nom_magasin }}{% endblock %}
 
 {% block content %}
 <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-xl gap-sm">
@@ -9,9 +9,11 @@
         <h2 class="text-3xl font-bold text-on-surface">Fournisseurs</h2>
         <p class="text-secondary mt-1">Vos partenaires d'approvisionnement</p>
     </div>
+    {% if perms.fournisseurs.add_fournisseur %}
     <a href="{% url 'fournisseurs:ajouter_fournisseur' %}" class="bg-primary-container text-on-primary-container font-semibold py-2 px-md rounded-lg flex items-center hover:bg-primary hover:text-white transition-colors shadow-sm">
         <span class="material-symbols-outlined text-[18px] mr-1">add</span> Ajouter un fournisseur
     </a>
+    {% endif %}
 </div>
 
 <div class="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant overflow-hidden">

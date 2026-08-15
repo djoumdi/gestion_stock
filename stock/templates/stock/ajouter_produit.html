@@ -1,7 +1,7 @@
 <!-- stock/templates/stock/ajouter_produit.html -->
 {% extends 'base.html' %}
 
-{% block title %}Ajouter un produit - TechStock{% endblock %}
+{% block title %}Ajouter un produit - {{ config_magasin.nom_magasin }}{% endblock %}
 
 {% block content %}
 <div class="mb-lg">
@@ -40,6 +40,22 @@
                     </div>
                 </div>
 
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-lg mb-lg">
+                    <div>
+                        <label class="block text-xs font-semibold text-secondary mb-1">Référence (SKU)</label>
+                        <input name="reference" class="w-full bg-surface border border-outline-variant rounded p-2 font-mono focus:border-primary outline-none" type="text" placeholder="Laisser vide pour génération auto.">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-secondary mb-1">Code-barres (EAN/UPC)</label>
+                        <input name="code_barres" class="w-full bg-surface border border-outline-variant rounded p-2 font-mono focus:border-primary outline-none" type="text" placeholder="Optionnel">
+                    </div>
+                </div>
+
+                <div class="mb-lg">
+                    <label class="block text-xs font-semibold text-secondary mb-1">Description</label>
+                    <textarea name="description" rows="3" class="w-full bg-surface border border-outline-variant rounded p-2 focus:border-primary outline-none"></textarea>
+                </div>
+
                 <div class="mb-lg">
                     <label class="block text-xs font-semibold text-secondary mb-1">Catégorie</label>
                     <select name="categorie" id="select-categorie" class="w-full bg-surface border border-outline-variant rounded p-2 focus:border-primary outline-none">
@@ -65,22 +81,31 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-lg mb-lg">
                     <div>
                         <label class="block text-xs font-semibold text-secondary mb-1">Prix de vente (FCFA)</label>
-                        <input name="prix_vente" class="w-full bg-surface border border-outline-variant rounded p-2 font-mono text-right focus:border-primary outline-none" type="number" step="0.01" required>
+                        <input id="input-prix-vente" name="prix_vente" class="w-full bg-surface border border-outline-variant rounded p-2 font-mono text-right focus:border-primary outline-none" type="number" step="0.01" required oninput="calculerMarge()">
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-secondary mb-1">Prix d'achat (FCFA)</label>
-                        <input name="prix_achat" class="w-full bg-surface border border-outline-variant rounded p-2 font-mono text-right focus:border-primary outline-none" type="number" step="0.01" required>
+                        <input id="input-prix-achat" name="prix_achat" class="w-full bg-surface border border-outline-variant rounded p-2 font-mono text-right focus:border-primary outline-none" type="number" step="0.01" required oninput="calculerMarge()">
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-lg mb-lg">
+                <div id="apercu-marge" class="hidden mb-lg text-sm bg-surface-container-low border border-outline-variant rounded-lg p-3 flex justify-between">
+                    <span class="text-secondary">Marge estimée</span>
+                    <span id="apercu-marge-valeur" class="font-mono font-bold"></span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-lg mb-lg">
                     <div>
                         <label class="block text-xs font-semibold text-secondary mb-1">Stock initial (entrée automatique)</label>
                         <input name="quantite_stock" class="w-full bg-surface border border-outline-variant rounded p-2 font-mono text-right focus:border-primary outline-none" type="number" value="0" min="0">
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-secondary mb-1">Seuil d'alerte</label>
+                        <label class="block text-xs font-semibold text-secondary mb-1">Seuil minimum (alerte)</label>
                         <input name="seuil_alerte" class="w-full bg-surface border border-outline-variant rounded p-2 font-mono text-right focus:border-primary outline-none" type="number" value="5">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-secondary mb-1">Seuil maximum</label>
+                        <input name="seuil_max" class="w-full bg-surface border border-outline-variant rounded p-2 font-mono text-right focus:border-primary outline-none" type="number" placeholder="Optionnel">
                     </div>
                 </div>
 
@@ -131,6 +156,27 @@
     }
     gererChoixCreation('select-marque', 'input-nouvelle-marque');
     gererChoixCreation('select-categorie', 'input-nouvelle-categorie');
+
+    function calculerMarge() {
+        const prixVente = parseFloat(document.getElementById('input-prix-vente').value);
+        const prixAchat = parseFloat(document.getElementById('input-prix-achat').value);
+        const bloc = document.getElementById('apercu-marge');
+        const valeur = document.getElementById('apercu-marge-valeur');
+
+        if (isNaN(prixVente) || isNaN(prixAchat)) {
+            bloc.classList.add('hidden');
+            return;
+        }
+
+        const marge = prixVente - prixAchat;
+        const taux = prixAchat !== 0 ? ((marge / prixAchat) * 100).toFixed(1) : null;
+
+        valeur.textContent = taux !== null
+            ? `${marge.toFixed(2)} FCFA (${taux}%)`
+            : `${marge.toFixed(2)} FCFA`;
+        valeur.className = 'font-mono font-bold ' + (marge >= 0 ? 'text-[#065F46]' : 'text-error');
+        bloc.classList.remove('hidden');
+    }
     
     function previsualiserImage(input) {
         if (!input.files || !input.files[0]) return;

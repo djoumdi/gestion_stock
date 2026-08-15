@@ -1,8 +1,11 @@
 # accounts/migrations/0001_create_groups.py
 from django.db import migrations
+from ._permissions_utils import forcer_creation_permissions
 
 
 def creer_roles(apps, schema_editor):
+    forcer_creation_permissions(apps, schema_editor)
+
     Group = apps.get_model('auth', 'Group')
     Permission = apps.get_model('auth', 'Permission')
 
@@ -48,10 +51,14 @@ def supprimer_roles(apps, schema_editor):
 class Migration(migrations.Migration):
 
     # Dépend maintenant de plusieurs apps (client/vente ont déménagé hors de stock)
+    # + contenttypes.0002 : forcer_creation_permissions() crée des ContentType
+    # immédiatement, il faut que le schéma de cette table soit déjà à jour
+    # (colonne "name" supprimée) sous peine de NOT NULL constraint failed.
     dependencies = [
         ('stock', '0001_initial'),
         ('clients', '0001_initial'),
         ('ventes', '0001_initial'),
+        ('contenttypes', '0002_remove_content_type_name'),
     ]
 
     operations = [

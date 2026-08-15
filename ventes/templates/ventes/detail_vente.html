@@ -2,7 +2,7 @@
 {% extends 'base.html' %}
 {% load whatsapp_tags %}
 
-{% block title %}Vente #{{ vente.id }} - TechStock{% endblock %}
+{% block title %}Vente #{{ vente.id }} - {{ config_magasin.nom_magasin }}{% endblock %}
 
 {% block content %}
 <div class="flex justify-between items-start mb-lg">
@@ -61,7 +61,7 @@
             <span class="material-symbols-outlined text-[14px]">check_circle</span>
             Payée ({{ facture.paiement.get_mode_paiement_display }})
         </span>
-        {% else %}
+        {% elif perms.ventes.add_paiement %}
         <form method="POST" action="{% url 'ventes:enregistrer_paiement' vente.pk %}" class="flex flex-col gap-2">
             {% csrf_token %}
             <select name="mode_paiement" class="bg-surface border border-outline-variant rounded p-1.5 text-sm focus:border-primary outline-none">
@@ -73,6 +73,10 @@
                 Marquer comme payée
             </button>
         </form>
+        {% else %}
+        <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-[#FEF3C7] text-[#92400E]">
+            <span class="material-symbols-outlined text-[14px]">schedule</span> Non payée
+        </span>
         {% endif %}
     </div>
 </div>

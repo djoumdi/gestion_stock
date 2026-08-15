@@ -1,0 +1,116 @@
+<!-- templates/mon_compte.html -->
+{% extends 'base.html' %}
+
+{% block title %}Mon compte - {{ config_magasin.nom_magasin }}{% endblock %}
+
+{% block content %}
+<div class="mb-lg">
+    <h2 class="text-3xl font-bold text-on-surface">Mon compte</h2>
+    <p class="text-secondary mt-1">Tes informations, ton mot de passe, l'apparence de l'application</p>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-lg max-w-4xl">
+
+    <!-- Informations personnelles -->
+    <div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg shadow-sm">
+        <h3 class="text-lg font-bold mb-md">Informations personnelles</h3>
+        <form method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="profil">
+
+            <div class="mb-md">
+                <label class="block text-xs font-semibold text-secondary mb-1">Nom d'utilisateur</label>
+                <input class="w-full bg-surface-container-low border border-outline-variant rounded p-2 text-on-surface-variant" type="text" value="{{ request.user.username }}" disabled>
+                <p class="text-xs text-secondary mt-1">Le nom d'utilisateur ne peut pas être modifié ici. Contacte un administrateur.</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-md mb-md">
+                <div>
+                    <label class="block text-xs font-semibold text-secondary mb-1">Prénom</label>
+                    <input name="first_name" class="w-full bg-surface border border-outline-variant rounded p-2 focus:border-primary outline-none" type="text" value="{{ request.user.first_name }}">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-secondary mb-1">Nom</label>
+                    <input name="last_name" class="w-full bg-surface border border-outline-variant rounded p-2 focus:border-primary outline-none" type="text" value="{{ request.user.last_name }}">
+                </div>
+            </div>
+
+            <div class="mb-lg">
+                <label class="block text-xs font-semibold text-secondary mb-1">Email</label>
+                <input name="email" class="w-full bg-surface border border-outline-variant rounded p-2 focus:border-primary outline-none" type="email" value="{{ request.user.email }}">
+            </div>
+
+            <button type="submit" class="bg-primary-container text-on-primary-container font-semibold py-2 px-md rounded-lg hover:bg-primary hover:text-white transition-colors">
+                Enregistrer
+            </button>
+        </form>
+    </div>
+
+    <!-- Apparence -->
+    <div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg shadow-sm">
+        <h3 class="text-lg font-bold mb-md">Apparence</h3>
+        <form method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="theme">
+
+            <div class="space-y-2 mb-lg">
+                {% for valeur, libelle in preference.THEME_CHOICES %}
+                <label class="flex items-center gap-3 p-3 border border-outline-variant rounded-lg cursor-pointer hover:bg-surface-container-low transition-colors {% if preference.theme == valeur %}border-primary bg-surface-container-low{% endif %}">
+                    <input type="radio" name="theme" value="{{ valeur }}" class="accent-primary" {% if preference.theme == valeur %}checked{% endif %} onchange="basculerThemeInstantane('{{ valeur }}')">
+                    <div>
+                        <span class="text-sm font-semibold text-on-surface">{{ libelle }}</span>
+                        {% if valeur == 'auto' %}<p class="text-xs text-secondary">S'adapte au réglage de ton téléphone ou de ton ordinateur.</p>{% endif %}
+                    </div>
+                </label>
+                {% endfor %}
+            </div>
+
+            <button type="submit" class="bg-primary-container text-on-primary-container font-semibold py-2 px-md rounded-lg hover:bg-primary hover:text-white transition-colors">
+                Enregistrer
+            </button>
+            <p class="text-xs text-secondary mt-2">Le thème choisi s'applique immédiatement, cliquer sur "Enregistrer" le garde pour tes prochaines connexions.</p>
+        </form>
+    </div>
+
+    <!-- Mot de passe -->
+    <div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg shadow-sm lg:col-span-2">
+        <h3 class="text-lg font-bold mb-md">Changer mon mot de passe</h3>
+        <form method="POST" class="max-w-md">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="mot_de_passe">
+
+            <div class="mb-md">
+                <label class="block text-xs font-semibold text-secondary mb-1">Mot de passe actuel</label>
+                <input name="ancien_mot_de_passe" class="w-full bg-surface border border-outline-variant rounded p-2 focus:border-primary outline-none" type="password" required>
+            </div>
+            <div class="grid grid-cols-2 gap-md mb-lg">
+                <div>
+                    <label class="block text-xs font-semibold text-secondary mb-1">Nouveau mot de passe</label>
+                    <input name="nouveau_mot_de_passe" class="w-full bg-surface border border-outline-variant rounded p-2 focus:border-primary outline-none" type="password" required>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-secondary mb-1">Confirmation</label>
+                    <input name="confirmation_mot_de_passe" class="w-full bg-surface border border-outline-variant rounded p-2 focus:border-primary outline-none" type="password" required>
+                </div>
+            </div>
+
+            <button type="submit" class="bg-primary-container text-on-primary-container font-semibold py-2 px-md rounded-lg hover:bg-primary hover:text-white transition-colors">
+                Changer le mot de passe
+            </button>
+        </form>
+    </div>
+
+</div>
+
+<script>
+    // Bascule immédiate en cliquant un radio, sans attendre "Enregistrer" —
+    // la persistance en base se fait en arrière-plan (voir applyTheme/fetch
+    // dans base.html), le formulaire au clic de "Enregistrer" reste le
+    // filet de sécurité pour les navigateurs sans JavaScript.
+    function basculerThemeInstantane(valeur) {
+        if (window.appliquerTheme) {
+            window.appliquerTheme(valeur);
+        }
+    }
+</script>
+{% endblock %}

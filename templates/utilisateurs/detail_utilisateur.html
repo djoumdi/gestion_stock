@@ -1,7 +1,7 @@
 <!-- templates/utilisateurs/detail_utilisateur.html -->
 {% extends 'base.html' %}
 
-{% block title %}{{ utilisateur.username }} - TechStock{% endblock %}
+{% block title %}{{ utilisateur.username }} - {{ config_magasin.nom_magasin }}{% endblock %}
 
 {% block content %}
 <div class="mb-lg">

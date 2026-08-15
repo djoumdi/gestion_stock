@@ -2,7 +2,7 @@
 {% extends 'base.html' %}
 {% load whatsapp_tags %}
 
-{% block title %}{{ achat.code }} - TechStock{% endblock %}
+{% block title %}{{ achat.code }} - {{ config_magasin.nom_magasin }}{% endblock %}
 
 {% block content %}
 <div class="flex justify-between items-start mb-lg">

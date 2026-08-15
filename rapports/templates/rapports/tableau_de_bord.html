@@ -1,14 +1,15 @@
 <!-- rapports/templates/rapports/tableau_de_bord.html -->
 {% extends 'base.html' %}
 
-{% block title %}Tableau de bord - TechStock{% endblock %}
+{% block title %}Tableau de bord - {{ config_magasin.nom_magasin }}{% endblock %}
 
 {% block content %}
 <div class="mb-lg">
-    <h2 class="text-3xl font-bold text-on-surface">Bonjour, {{ utilisateur.first_name|default:utilisateur.username }}</h2>
+    <h2 class="text-3xl capitalize font-bold text-on-surface">Bonjour, {{ utilisateur.first_name|default:utilisateur.username }}</h2>
     <p class="text-secondary mt-1">
         {% if role_dashboard == 'vendeur' %}Aperçu de vos ventes
         {% elif role_dashboard == 'gestionnaire' %}Aperçu du stock et des achats
+        {% elif role_dashboard == 'magasinier' %}Réceptions et mouvements de stock
         {% elif role_dashboard == 'aucun_role' %}Compte en attente d'un rôle
         {% else %}Aperçu de l'activité du magasin{% endif %}
     </p>
@@ -19,7 +20,7 @@
 <div class="max-w-lg mx-auto text-center bg-surface-container-lowest border border-outline-variant rounded-xl p-xl shadow-sm mt-xl">
     <span class="material-symbols-outlined text-5xl text-secondary mb-md">lock_person</span>
     <h3 class="text-lg font-bold text-on-surface mb-2">Aucun rôle assigné à ce compte</h3>
-    <p class="text-sm text-secondary">Ton compte est actif, mais aucun rôle (Vendeur, Gestionnaire de stock, Responsable ou Administrateur) ne lui a encore été attribué. Contacte un administrateur pour qu'il t'en assigne un depuis la page Utilisateurs.</p>
+    <p class="text-sm text-secondary">Ton compte est actif, mais aucun rôle (Caissier, Gestionnaire de stock, Magasinier ou Administrateur) ne lui a encore été attribué. Contacte un administrateur pour qu'il t'en assigne un depuis la page Utilisateurs.</p>
 </div>
 
 {% elif role_dashboard == 'vendeur' %}
@@ -59,7 +60,9 @@
     <div class="lg:col-span-2 bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant overflow-hidden">
         <div class="p-lg border-b border-outline-variant flex justify-between items-center">
             <h3 class="text-lg font-bold">Mes dernières ventes</h3>
+            {% if perms.ventes.add_vente %}
             <a href="{% url 'ventes:nouvelle_vente' %}" class="text-sm font-semibold text-primary hover:underline">+ Nouvelle vente</a>
+            {% endif %}
         </div>
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
@@ -145,7 +148,12 @@
     </div>
 
     <div class="bg-surface-container-lowest p-lg rounded-xl border border-outline-variant shadow-sm">
-        <h3 class="text-lg font-bold mb-md">Derniers mouvements de stock</h3>
+        <div class="flex justify-between items-center mb-md">
+            <h3 class="text-lg font-bold">Derniers mouvements de stock</h3>
+            {% if perms.stock.add_mouvementstock %}
+            <a href="{% url 'stock:nouveau_mouvement' %}" class="text-sm font-semibold text-primary hover:underline">+ Nouveau mouvement</a>
+            {% endif %}
+        </div>
         <div class="space-y-2">
             {% for mvt in derniers_mouvements %}
             <div class="flex justify-between items-center py-2 border-b border-outline-variant last:border-0">
@@ -194,8 +202,81 @@
     </div>
 </div>
 
+{% elif role_dashboard == 'magasinier' %}
+<!-- ==================== TABLEAU DE BORD MAGASINIER ==================== -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-md mb-lg">
+    <div class="bg-surface-container-lowest p-md rounded-xl border border-outline-variant shadow-sm">
+        <div class="w-10 h-10 rounded bg-primary-container/20 flex items-center justify-center text-primary mb-3">
+            <span class="material-symbols-outlined">local_shipping</span>
+        </div>
+        <h3 class="text-xs font-semibold text-secondary uppercase tracking-wider mb-1">Commandes à réceptionner</h3>
+        <span class="text-2xl font-bold text-on-surface">{{ nb_achats_a_receptionner }}</span>
+    </div>
+    <div class="bg-surface-container-lowest p-md rounded-xl border border-outline-variant shadow-sm">
+        <div class="w-10 h-10 rounded bg-[#FEE2E2] flex items-center justify-center text-[#991B1B] mb-3">
+            <span class="material-symbols-outlined">production_quantity_limits</span>
+        </div>
+        <h3 class="text-xs font-semibold text-secondary uppercase tracking-wider mb-1">Produits en rupture</h3>
+        <span class="text-2xl font-bold text-on-surface">{{ produits_en_rupture|length }}</span>
+    </div>
+</div>
+
+<div class="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant overflow-hidden mb-lg">
+    <div class="p-lg border-b border-outline-variant">
+        <h3 class="text-lg font-bold">Commandes en attente de réception</h3>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-surface-container-low border-b border-outline-variant">
+                    <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider">Réf.</th>
+                    <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider">Fournisseur</th>
+                    <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider">Statut</th>
+                    <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider text-right">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for achat in achats_a_receptionner %}
+                <tr onclick="window.location='{% url 'achats:detail_achat' achat.pk %}'" class="cursor-pointer border-b border-outline-variant hover:bg-surface-container-low transition-colors last:border-0">
+                    <td class="py-3 px-md font-mono text-secondary">{{ achat.code }}</td>
+                    <td class="py-3 px-md font-semibold text-on-surface">{{ achat.fournisseur|default:"—" }}</td>
+                    <td class="py-3 px-md text-on-surface-variant">{{ achat.get_statut_display }}</td>
+                    <td class="py-3 px-md text-right font-mono font-bold text-on-surface">{{ achat.total }} FCFA</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="py-6 px-md text-center text-secondary">Aucune commande en attente de réception</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="bg-surface-container-lowest p-lg rounded-xl border border-outline-variant shadow-sm">
+    <div class="flex justify-between items-center mb-md">
+        <h3 class="text-lg font-bold">Derniers mouvements de stock</h3>
+        {% if perms.stock.add_mouvementstock %}
+        <a href="{% url 'stock:nouveau_mouvement' %}" class="text-sm font-semibold text-primary hover:underline">+ Nouveau mouvement</a>
+        {% endif %}
+    </div>
+    <div class="space-y-2">
+        {% for mvt in derniers_mouvements %}
+        <div class="flex justify-between items-center py-2 border-b border-outline-variant last:border-0">
+            <div>
+                <span class="text-sm font-semibold">{{ mvt.produit.nom }}</span>
+                <div class="text-xs text-secondary">{{ mvt.motif }}</div>
+            </div>
+            <span class="text-xs font-bold px-2 py-1 rounded-full {% if mvt.type_mouvement == 'entree' %}bg-[#D1FAE5] text-[#065F46]{% else %}bg-[#FEE2E2] text-[#991B1B]{% endif %}">
+                {% if mvt.type_mouvement == 'entree' %}+{% else %}-{% endif %}{{ mvt.quantite }}
+            </span>
+        </div>
+        {% empty %}
+        <p class="text-sm text-secondary">Aucun mouvement récent</p>
+        {% endfor %}
+    </div>
+</div>
+
 {% else %}
-<!-- ==================== TABLEAU DE BORD ADMINISTRATEUR / RESPONSABLE ==================== -->
+<!-- ==================== TABLEAU DE BORD ADMINISTRATEUR ==================== -->
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-md mb-lg">
     <div class="bg-surface-container-lowest p-md rounded-xl border border-outline-variant shadow-sm">
         <div class="w-10 h-10 rounded bg-primary-container/20 flex items-center justify-center text-primary mb-3">

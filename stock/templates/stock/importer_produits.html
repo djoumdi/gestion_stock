@@ -1,0 +1,42 @@
+<!-- stock/templates/stock/importer_produits.html -->
+{% extends 'base.html' %}
+
+{% block title %}Importer des produits - {{ config_magasin.nom_magasin }}{% endblock %}
+
+{% block content %}
+<div class="mb-lg">
+    <div class="text-sm text-secondary flex items-center gap-1 mb-1">
+        <a class="hover:text-primary transition-colors" href="{% url 'stock:liste_produits' %}">Produits</a>
+        <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+        <span class="text-on-surface font-semibold">Importer</span>
+    </div>
+    <h2 class="text-3xl font-bold text-on-surface">Importer des produits</h2>
+    <p class="text-secondary mt-1">Créez ou mettez à jour votre catalogue en masse depuis un fichier Excel</p>
+</div>
+
+<div class="max-w-2xl space-y-lg">
+    <div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg shadow-sm">
+        <h3 class="text-sm font-bold mb-2">Comment ça marche</h3>
+        <ul class="text-sm text-secondary space-y-1 list-disc list-inside">
+            <li>Le fichier doit être au format <strong>.xlsx</strong>, avec les mêmes colonnes que l'export.</li>
+            <li>Une ligne avec une <strong>référence déjà existante</strong> met à jour le produit correspondant.</li>
+            <li>Une ligne avec une référence <strong>vide ou inconnue</strong> crée un nouveau produit.</li>
+            <li>La colonne <strong>Stock actuel</strong> est ignorée à l'import : la quantité ne bouge que via un vrai mouvement de stock (achat, vente, inventaire), jamais depuis un tableur.</li>
+            <li>Marque et Catégorie sont créées automatiquement si elles n'existent pas encore. Le Fournisseur, lui, doit déjà exister.</li>
+        </ul>
+        <a href="{% url 'stock:exporter_produits' %}" class="inline-flex items-center gap-2 mt-md text-sm font-semibold text-primary hover:underline">
+            <span class="material-symbols-outlined text-[18px]">download</span> Télécharger le catalogue actuel comme modèle
+        </a>
+    </div>
+
+    <form method="POST" enctype="multipart/form-data" class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg shadow-sm">
+        {% csrf_token %}
+        <label class="block text-xs font-semibold text-secondary mb-2">Fichier Excel (.xlsx)</label>
+        <input type="file" name="fichier" accept=".xlsx" required
+               class="w-full bg-surface border border-outline-variant rounded p-2 focus:border-primary outline-none mb-md">
+        <button type="submit" class="bg-primary-container text-on-primary-container font-semibold py-2 px-md rounded-lg hover:bg-primary hover:text-white transition-colors">
+            Importer
+        </button>
+    </form>
+</div>
+{% endblock %}

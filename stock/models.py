@@ -21,7 +21,12 @@ class Marque(models.Model):
 
 
 class Produit(models.Model):
+    reference = models.CharField(max_length=50, unique=True, blank=True,
+        help_text="Référence interne (SKU). Générée automatiquement si laissée vide.")
+    code_barres = models.CharField(max_length=50, blank=True,
+        help_text="Code EAN/UPC scanné ou saisi manuellement. Optionnel.")
     nom = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
     marque = models.ForeignKey(Marque, on_delete=models.SET_NULL, null=True, blank=True, related_name='produits')
     fournisseur = models.ForeignKey('fournisseurs.Fournisseur', on_delete=models.SET_NULL, null=True, blank=True, related_name='produits')
     image = models.ImageField(upload_to='produits/', blank=True, null=True)
@@ -29,8 +34,15 @@ class Produit(models.Model):
     prix_achat = models.DecimalField(max_digits=10, decimal_places=2)
     prix_vente = models.DecimalField(max_digits=10, decimal_places=2)
     quantite_stock = models.PositiveIntegerField(default=0)
-    seuil_alerte = models.PositiveIntegerField(default=5)
+    seuil_alerte = models.PositiveIntegerField(default=5, help_text="Seuil de stock MINIMUM avant alerte.")
+    seuil_max = models.PositiveIntegerField(null=True, blank=True, help_text="Seuil de stock MAXIMUM recommandé (optionnel).")
     date_ajout = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        if not self.reference:
+            self.reference = f"PRD-{self.pk:06d}"
+            super().save(update_fields=['reference'])
 
     def __str__(self):
         return f"{self.marque} {self.nom}" if self.marque else self.nom
@@ -38,6 +50,21 @@ class Produit(models.Model):
     @property
     def en_alerte(self):
         return self.quantite_stock <= self.seuil_alerte
+
+    @property
+    def en_surstock(self):
+        return self.seuil_max is not None and self.quantite_stock > self.seuil_max
+
+    @property
+    def marge(self):
+        return self.prix_vente - self.prix_achat
+
+    @property
+    def taux_marge(self):
+        """Marge en % du prix d'achat. None si prix_achat vaut 0 (division impossible)."""
+        if self.prix_achat:
+            return round((self.marge / self.prix_achat) * 100, 1)
+        return None
 
 
 class MouvementStock(models.Model):

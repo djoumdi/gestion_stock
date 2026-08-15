@@ -1,8 +1,11 @@
 # accounts/migrations/0002_add_fournisseur_permissions.py
 from django.db import migrations
+from ._permissions_utils import forcer_creation_permissions
 
 
 def ajouter_permissions_fournisseur(apps, schema_editor):
+    forcer_creation_permissions(apps, schema_editor)
+
     Group = apps.get_model('auth', 'Group')
     Permission = apps.get_model('auth', 'Permission')
 

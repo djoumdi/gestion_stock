@@ -1,7 +1,7 @@
 <!-- stock/templates/stock/detail_client.html -->
 {% extends 'base.html' %}
 
-{% block title %}{{ client.nom }} - TechStock{% endblock %}
+{% block title %}{{ client.nom }} - {{ config_magasin.nom_magasin }}{% endblock %}
 
 {% block content %}
 <div class="mb-lg">

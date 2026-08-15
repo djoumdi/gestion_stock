@@ -9,15 +9,17 @@ https://docs.djangoproject.com/en/6.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
-
+import os
+import dj_database_url
+from dotenv import load_dotenv
 from pathlib import Path
-
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
+
+# Définir le chemin de la racine du projet (où se trouve manage.py)
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-tdsgu+xywwg0)txanecysk4trk_39d46(#ygybow(ind_%u_!m'
@@ -37,6 +39,12 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+    # SDK Cloudinary
+    'cloudinary',
+    'cloudinary_storage',
+
+    # local apps
     'accounts',
     'stock',
     'fournisseurs',
@@ -44,6 +52,7 @@ INSTALLED_APPS = [
     'achats',
     'ventes',
     'rapports',
+    'parametres',
 ]
 
 MIDDLEWARE = [
@@ -69,6 +78,8 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'accounts.context_processors.notifications',
+                'accounts.context_processors.theme_utilisateur',
+                'parametres.context_processors.config_magasin',
             ],
         },
     },
@@ -80,11 +91,21 @@ WSGI_APPLICATION = 'gestion_stock.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
+
+
+
+# Charger explicitement le fichier .env depuis la racine
+load_dotenv(BASE_DIR / '.env')
+
+# Configuration de la base de données
+DATABASE_URL = os.getenv('DATABASE_URL')
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(
+        default=DATABASE_URL or "postgresql://neondb_owner:npg_tj9NLXTA5IKv@ep-autumn-flower-aywwdry3.c-5.us-east-2.aws.neon.tech/neondb?sslmode=require",
+        conn_max_age=600,
+        ssl_require=True
+    )
 }
 
 
@@ -138,8 +159,12 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 
  
-# Indicatif pays utilise pour transformer un numero local en format
-# international requis par les liens WhatsApp (wa.me).
-# 237 = Cameroun. Les numeros mobiles camerounais s'ecrivent sur 9 chiffres
-# sans 0 de tete (ex : 699887766) -> devient 237699887766 pour wa.me.
+# Indicatif pays utilise pour transformer un numero local (ex: 0612345678)
+# en format international requis par les liens WhatsApp (wa.me).
+# Exemples : Senegal 221, Cote d'Ivoire 225, Cameroun 237, Maroc 212, France 33.
+# Laisser vide si tous les numeros sont deja enregistres avec leur indicatif (+ ou 00).
 WHATSAPP_INDICATIF_PAYS = '237'
+
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
+MEDIA_URL = '/media/'

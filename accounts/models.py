@@ -32,3 +32,22 @@ class HistoriqueAction(models.Model):
     def __str__(self):
         auteur = self.utilisateur or "Utilisateur supprimé"
         return f"{auteur} — {self.action}"
+
+
+class PreferenceUtilisateur(models.Model):
+    """Préférences personnelles propres à chaque compte (pas partagées, contrairement
+    à ParametresMagasin). Pour l'instant : le thème d'affichage."""
+    AUTO = 'auto'
+    CLAIR = 'clair'
+    SOMBRE = 'sombre'
+    THEME_CHOICES = [
+        (AUTO, "Automatique (thème de l'appareil)"),
+        (CLAIR, "Clair"),
+        (SOMBRE, "Sombre"),
+    ]
+
+    utilisateur = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='preferences')
+    theme = models.CharField(max_length=10, choices=THEME_CHOICES, default=AUTO)
+
+    def __str__(self):
+        return f"Préférences de {self.utilisateur}"

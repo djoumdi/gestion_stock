@@ -3,7 +3,9 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib import messages
 from django.db.models import ProtectedError
 from django.utils import timezone
+from django.http import FileResponse
 from .models import Produit, Categorie, Marque, MouvementStock, Inventaire, LigneInventaire
+from .import_export import exporter_produits_xlsx, importer_produits_xlsx
 from fournisseurs.models import Fournisseur
 from accounts.notifications import notifier_utilisateur, notifier_administrateurs, enregistrer_action
 
@@ -14,6 +16,50 @@ def liste_produits(request):
     produits = Produit.objects.all().order_by('nom')
     categories = Categorie.objects.all().order_by('nom')
     return render(request, 'stock/liste_produits.html', {'produits': produits, 'categories': categories})
+
+
+@login_required
+@permission_required('stock.view_produit', raise_exception=True)
+def exporter_produits(request):
+    produits = Produit.objects.select_related('marque', 'categorie', 'fournisseur').order_by('nom')
+    buffer = exporter_produits_xlsx(produits)
+    return FileResponse(buffer, as_attachment=True, filename='produits.xlsx')
+
+
+@login_required
+@permission_required('stock.add_produit', raise_exception=True)
+@permission_required('stock.change_produit', raise_exception=True)
+def importer_produits(request):
+    if request.method == 'POST':
+        fichier = request.FILES.get('fichier')
+        if not fichier:
+            messages.error(request, "Sélectionnez un fichier .xlsx à importer.")
+            return redirect('stock:importer_produits')
+
+        if not fichier.name.lower().endswith('.xlsx'):
+            messages.error(request, "Le fichier doit être au format .xlsx (utilisez l'export comme modèle).")
+            return redirect('stock:importer_produits')
+
+        resultat = importer_produits_xlsx(fichier, Produit, Marque, Categorie, Fournisseur)
+
+        if resultat.crees or resultat.modifies:
+            enregistrer_action(
+                request.user,
+                f"a importé un fichier produits ({resultat.crees} créé(s), {resultat.modifies} modifié(s))",
+            )
+            messages.success(
+                request,
+                f"Import terminé : {resultat.crees} produit(s) créé(s), {resultat.modifies} mis à jour."
+            )
+        if resultat.erreurs:
+            for erreur in resultat.erreurs[:20]:
+                messages.warning(request, erreur)
+            if len(resultat.erreurs) > 20:
+                messages.warning(request, f"... et {len(resultat.erreurs) - 20} autre(s) ligne(s) en erreur.")
+
+        return redirect('stock:liste_produits')
+
+    return render(request, 'stock/importer_produits.html')
 
 
 @login_required
@@ -38,12 +84,16 @@ def ajouter_produit(request):
 
         produit = Produit.objects.create(
             nom=request.POST.get('nom'),
+            reference=request.POST.get('reference', '').strip(),
+            code_barres=request.POST.get('code_barres', '').strip(),
+            description=request.POST.get('description', '').strip(),
             marque_id=marque_id if marque_id else None,
             categorie_id=categorie_id if categorie_id else None,
             fournisseur_id=fournisseur_id if fournisseur_id else None,
             prix_achat=request.POST.get('prix_achat'),
             prix_vente=request.POST.get('prix_vente'),
             seuil_alerte=request.POST.get('seuil_alerte') or 5,
+            seuil_max=request.POST.get('seuil_max') or None,
         )
         # quantite_stock reste à 0 (valeur par défaut du modèle) : on ne la
         # fixe jamais directement. Un stock de départ éventuel passe par un
@@ -74,17 +124,27 @@ def ajouter_produit(request):
 
 
 @login_required
-@permission_required('stock.change_produit', raise_exception=True)
+@permission_required('stock.view_produit', raise_exception=True)
 def detail_produit(request, pk):
     produit = get_object_or_404(Produit, pk=pk)
 
     if request.method == 'POST':
+        if not request.user.has_perm('stock.change_produit'):
+            messages.error(request, "Tu n'as pas le droit de modifier ce produit.")
+            return redirect('stock:detail_produit', pk=produit.pk)
+
         produit.nom = request.POST.get('nom')
+        reference = request.POST.get('reference', '').strip()
+        if reference:
+            produit.reference = reference
+        produit.code_barres = request.POST.get('code_barres', '').strip()
+        produit.description = request.POST.get('description', '').strip()
         marque_id = request.POST.get('marque')
         produit.marque_id = marque_id if marque_id else None
         produit.prix_achat = request.POST.get('prix_achat')
         produit.prix_vente = request.POST.get('prix_vente')
         produit.seuil_alerte = request.POST.get('seuil_alerte')
+        produit.seuil_max = request.POST.get('seuil_max') or None
         if request.FILES.get('image'):
             produit.image = request.FILES['image']
         produit.save()
@@ -182,6 +242,59 @@ def historique_mouvements(request):
         'type_selectionne': type_mouvement or '',
         'date_debut': date_debut or '',
         'date_fin': date_fin or '',
+    })
+
+
+@login_required
+@permission_required('stock.add_mouvementstock', raise_exception=True)
+def nouveau_mouvement(request):
+    if request.method == 'POST':
+        produit = get_object_or_404(Produit, pk=request.POST.get('produit'))
+        type_mouvement = request.POST.get('type_mouvement')
+        motif = request.POST.get('motif', '').strip()
+
+        if type_mouvement not in (MouvementStock.ENTREE, MouvementStock.SORTIE):
+            messages.error(request, "Type de mouvement invalide.")
+            return redirect('stock:nouveau_mouvement')
+
+        try:
+            quantite = int(request.POST.get('quantite') or 0)
+        except ValueError:
+            quantite = 0
+
+        if quantite <= 0:
+            messages.error(request, "La quantité doit être supérieure à zéro.")
+            return redirect('stock:nouveau_mouvement')
+
+        if not motif:
+            messages.error(request, "Indique un motif (perte, casse, correction d'inventaire...).")
+            return redirect('stock:nouveau_mouvement')
+
+        if type_mouvement == MouvementStock.SORTIE and quantite > produit.quantite_stock:
+            messages.error(
+                request,
+                f"Stock insuffisant : « {produit.nom} » n'a que {produit.quantite_stock} en stock, "
+                f"impossible de sortir {quantite}."
+            )
+            return redirect('stock:nouveau_mouvement')
+
+        MouvementStock.objects.create(
+            produit=produit,
+            type_mouvement=type_mouvement,
+            quantite=quantite,
+            motif=motif,
+        )
+
+        enregistrer_action(
+            request.user,
+            f"a saisi un mouvement manuel ({'entrée' if type_mouvement == MouvementStock.ENTREE else 'sortie'} de {quantite}) sur « {produit.nom} » — motif : {motif}",
+            lien=f"/produits/mouvements/",
+        )
+        messages.success(request, f"Mouvement enregistré : {produit.nom} — {quantite} unité(s).")
+        return redirect('stock:historique_mouvements')
+
+    return render(request, 'stock/nouveau_mouvement.html', {
+        'produits': Produit.objects.all().order_by('nom'),
     })
 
 

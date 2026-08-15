@@ -3,9 +3,11 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.models import User, Group
 from django.contrib.auth.password_validation import validate_password
+from django.contrib.auth import update_session_auth_hash
 from django.core.exceptions import ValidationError
 from django.contrib import messages
-from .models import HistoriqueAction
+from django.http import JsonResponse
+from .models import HistoriqueAction, PreferenceUtilisateur
 from .notifications import enregistrer_action
 
 
@@ -131,3 +133,83 @@ def detail_utilisateur(request, pk):
         'groupes': groupes,
         'groupe_actuel': groupe_actuel,
     })
+
+
+@login_required
+def mon_compte(request):
+    """Espace personnel de CHAQUE utilisateur connecté (pas une page admin) :
+    infos personnelles, mot de passe, thème. Pas de @permission_required au-delà
+    de @login_required — gérer ses propres infos ne demande aucune permission
+    particulière, juste d'être connecté."""
+    preference, _ = PreferenceUtilisateur.objects.get_or_create(utilisateur=request.user)
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        if action == 'profil':
+            request.user.first_name = request.POST.get('first_name', '').strip()
+            request.user.last_name = request.POST.get('last_name', '').strip()
+            request.user.email = request.POST.get('email', '').strip()
+            request.user.save()
+            enregistrer_action(request.user, "a mis à jour ses informations personnelles")
+            messages.success(request, "Informations personnelles mises à jour.")
+            return redirect('accounts:mon_compte')
+
+        elif action == 'mot_de_passe':
+            ancien_mot_de_passe = request.POST.get('ancien_mot_de_passe', '')
+            nouveau_mot_de_passe = request.POST.get('nouveau_mot_de_passe', '')
+            confirmation = request.POST.get('confirmation_mot_de_passe', '')
+
+            if not request.user.check_password(ancien_mot_de_passe):
+                messages.error(request, "Mot de passe actuel incorrect.")
+                return redirect('accounts:mon_compte')
+
+            if nouveau_mot_de_passe != confirmation:
+                messages.error(request, "Les deux mots de passe saisis ne correspondent pas.")
+                return redirect('accounts:mon_compte')
+
+            try:
+                validate_password(nouveau_mot_de_passe, user=request.user)
+            except ValidationError as erreurs:
+                for erreur in erreurs:
+                    messages.error(request, erreur)
+                return redirect('accounts:mon_compte')
+
+            request.user.set_password(nouveau_mot_de_passe)
+            request.user.save()
+            # ESSENTIEL : sans ça, changer son propre mot de passe invalide la
+            # session en cours et déconnecte immédiatement l'utilisateur, ce
+            # qui donnerait l'impression que l'action a échoué.
+            update_session_auth_hash(request, request.user)
+            enregistrer_action(request.user, "a changé son mot de passe")
+            messages.success(request, "Mot de passe modifié avec succès.")
+            return redirect('accounts:mon_compte')
+
+        elif action == 'theme':
+            theme = request.POST.get('theme')
+            if theme in dict(PreferenceUtilisateur.THEME_CHOICES):
+                preference.theme = theme
+                preference.save()
+                messages.success(request, "Thème mis à jour.")
+            return redirect('accounts:mon_compte')
+
+    return render(request, 'mon_compte.html', {'preference': preference})
+
+
+@login_required
+def definir_theme(request):
+    """Endpoint léger appelé en arrière-plan (fetch) par le bouton de bascule
+    rapide clair/sombre dans la barre du haut, pour persister le choix sans
+    recharger la page. Le même réglage reste modifiable via un vrai formulaire
+    sur la page Mon compte, pour les gens sans JavaScript."""
+    if request.method != 'POST':
+        return JsonResponse({'ok': False}, status=405)
+
+    theme = request.POST.get('theme')
+    if theme not in dict(PreferenceUtilisateur.THEME_CHOICES):
+        return JsonResponse({'ok': False, 'erreur': 'theme invalide'}, status=400)
+
+    preference, _ = PreferenceUtilisateur.objects.get_or_create(utilisateur=request.user)
+    preference.theme = theme
+    preference.save()
+    return JsonResponse({'ok': True})

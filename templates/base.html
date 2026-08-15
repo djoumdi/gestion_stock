@@ -5,45 +5,169 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>{% block title %}TechStock{% endblock %}</title>
+<title>{% block title %}{{ config_magasin.nom_magasin }}{% endblock %}</title>
+
+<!-- Détection/application du thème AVANT tout rendu, pour éviter un flash de
+     mauvaise couleur au chargement. Ordre de priorité : préférence du compte
+     connecté (transmise par le serveur) > choix déjà mémorisé dans ce
+     navigateur > thème du système d'exploitation/appareil > clair par défaut. -->
+<script>
+    (function() {
+        const themeCompte = "{{ theme_utilisateur|default:'auto' }}";
+        const themeStocke = localStorage.getItem('theme');
+        const preferenceAppareil = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'sombre' : 'clair';
+
+        let themeEffectif;
+        if (themeCompte && themeCompte !== 'auto') {
+            themeEffectif = themeCompte;
+        } else if (themeStocke && themeStocke !== 'auto') {
+            themeEffectif = themeStocke;
+        } else {
+            themeEffectif = preferenceAppareil;
+        }
+
+        if (themeEffectif === 'sombre') {
+            document.documentElement.classList.add('dark');
+        }
+    })();
+</script>
+
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
 <style>
     .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
     body { font-family: 'Inter', sans-serif; }
+
+    /* Palette CLAIRE (par défaut) */
+    :root {
+        --color-primary: 0 74 198;
+        --color-primary-container: 37 99 235;
+        --color-on-primary-container: 238 239 255;
+        --color-secondary: 85 95 109;
+        --color-surface: 248 249 250;
+        --color-surface-container-lowest: 255 255 255;
+        --color-surface-container-low: 243 244 245;
+        --color-surface-container: 237 238 239;
+        --color-surface-container-high: 231 232 233;
+        --color-outline-variant: 195 198 215;
+        --color-on-surface: 25 28 29;
+        --color-on-surface-variant: 67 70 85;
+        --color-error: 186 26 26;
+    }
+
+    /* Palette SOMBRE — surfaces inversées, textes éclaircis, primaire/erreur
+       éclaircis pour rester lisibles sur fond sombre (contraste WCAG). */
+    html.dark {
+        --color-primary: 125 169 255;
+        --color-primary-container: 37 99 235;
+        --color-on-primary-container: 238 239 255;
+        --color-secondary: 154 164 178;
+        --color-surface: 18 20 23;
+        --color-surface-container-lowest: 26 29 33;
+        --color-surface-container-low: 32 35 40;
+        --color-surface-container: 40 44 50;
+        --color-surface-container-high: 49 54 61;
+        --color-outline-variant: 58 63 71;
+        --color-on-surface: 230 232 234;
+        --color-on-surface-variant: 176 182 192;
+        --color-error: 255 138 128;
+    }
+
+    html.dark img.assombrir-en-sombre { filter: brightness(0.9); }
 </style>
 <script>
     tailwind.config = {
         theme: {
             extend: {
                 colors: {
-                    "primary": "#004ac6",
-                    "primary-container": "#2563eb",
-                    "on-primary-container": "#eeefff",
-                    "secondary": "#555f6d",
-                    "surface": "#f8f9fa",
-                    "surface-container-lowest": "#ffffff",
-                    "surface-container-low": "#f3f4f5",
-                    "surface-container": "#edeeef",
-                    "surface-container-high": "#e7e8e9",
-                    "outline-variant": "#c3c6d7",
-                    "on-surface": "#191c1d",
-                    "on-surface-variant": "#434655",
-                    "error": "#ba1a1a",
+                    "primary": "rgb(var(--color-primary) / <alpha-value>)",
+                    "primary-container": "rgb(var(--color-primary-container) / <alpha-value>)",
+                    "on-primary-container": "rgb(var(--color-on-primary-container) / <alpha-value>)",
+                    "secondary": "rgb(var(--color-secondary) / <alpha-value>)",
+                    "surface": "rgb(var(--color-surface) / <alpha-value>)",
+                    "surface-container-lowest": "rgb(var(--color-surface-container-lowest) / <alpha-value>)",
+                    "surface-container-low": "rgb(var(--color-surface-container-low) / <alpha-value>)",
+                    "surface-container": "rgb(var(--color-surface-container) / <alpha-value>)",
+                    "surface-container-high": "rgb(var(--color-surface-container-high) / <alpha-value>)",
+                    "outline-variant": "rgb(var(--color-outline-variant) / <alpha-value>)",
+                    "on-surface": "rgb(var(--color-on-surface) / <alpha-value>)",
+                    "on-surface-variant": "rgb(var(--color-on-surface-variant) / <alpha-value>)",
+                    "error": "rgb(var(--color-error) / <alpha-value>)",
                 },
                 spacing: { "base": "4px", "xs": "8px", "sm": "12px", "md": "16px", "lg": "24px", "xl": "32px" },
             }
         }
     }
 </script>
+<script>
+    // Fonction globale utilisée par : le bouton de bascule rapide dans la
+    // barre du haut, et les boutons radio de la page "Mon compte". Applique
+    // le thème immédiatement (DOM), le mémorise pour ce navigateur
+    // (localStorage), et le persiste en base pour ce compte en arrière-plan
+    // si l'utilisateur est connecté (fetch, sans recharger la page).
+    function appliquerTheme(valeur) {
+        let sombre;
+        if (valeur === 'sombre') {
+            sombre = true;
+        } else if (valeur === 'clair') {
+            sombre = false;
+        } else {
+            sombre = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        }
+
+        document.documentElement.classList.toggle('dark', sombre);
+        localStorage.setItem('theme', valeur);
+        mettreAJourIconeTheme();
+
+        {% if request.user.is_authenticated %}
+        fetch("{% url 'accounts:definir_theme' %}", {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': lireCookie('csrftoken'),
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'theme=' + encodeURIComponent(valeur),
+        }).catch(() => { /* échec silencieux : la préférence reste appliquée localement */ });
+        {% endif %}
+    }
+    window.appliquerTheme = appliquerTheme;
+
+    function lireCookie(nom) {
+        const valeur = `; ${document.cookie}`;
+        const parties = valeur.split(`; ${nom}=`);
+        if (parties.length === 2) return parties.pop().split(';').shift();
+        return '';
+    }
+
+    function basculerThemeRapide() {
+        const estSombre = document.documentElement.classList.contains('dark');
+        appliquerTheme(estSombre ? 'clair' : 'sombre');
+        mettreAJourIconeTheme();
+    }
+
+    function mettreAJourIconeTheme() {
+        const icone = document.documentElement.classList.contains('dark') ? 'light_mode' : 'dark_mode';
+        const desktop = document.getElementById('icone-theme-desktop');
+        const mobile = document.getElementById('icone-theme-mobile');
+        if (desktop) desktop.textContent = icone;
+        if (mobile) mobile.textContent = icone;
+    }
+    document.addEventListener('DOMContentLoaded', mettreAJourIconeTheme);
+</script>
 </head>
 <body class="bg-surface text-on-surface min-h-screen">
 
-<!-- Sidebar -->
-<nav class="hidden md:flex bg-surface-container-low text-primary fixed left-0 top-0 bottom-0 w-[260px] border-r border-outline-variant flex-col py-md z-[60]">
-    <div class="px-lg pb-md mb-md border-b border-outline-variant">
-        <img src="{% static 'img/logo.png' %}" alt="TechStock" class="w-full max-w-[140px] mx-auto">
+<!-- Fond sombre derrière la sidebar mobile, cliquable pour refermer -->
+<div id="sidebar-overlay" onclick="toggleSidebar()" class="hidden fixed inset-0 bg-black/50 z-[65] md:hidden"></div>
+
+<!-- Sidebar (fixe sur desktop, tiroir coulissant sur mobile) -->
+<nav id="sidebar" class="flex bg-surface-container-low text-primary fixed left-0 top-0 bottom-0 w-[260px] border-r border-outline-variant flex-col py-md z-[70] transform -translate-x-full transition-transform duration-300 ease-in-out md:translate-x-0">
+    <div class="px-lg pb-md mb-md border-b border-outline-variant flex items-center justify-between">
+        {% if config_magasin.logo %}<img src="{{ config_magasin.logo.url }}" alt="{{ config_magasin.nom_magasin }}" class="w-full max-w-[140px] mx-auto">{% else %}<img src="{% static 'img/logo.png' %}" alt="{{ config_magasin.nom_magasin }}" class="w-full max-w-[140px] mx-auto">{% endif %}
+        <button type="button" onclick="toggleSidebar()" class="md:hidden p-1 text-on-surface-variant" aria-label="Fermer le menu">
+            <span class="material-symbols-outlined">close</span>
+        </button>
     </div>
     <ul class="flex-1 overflow-y-auto">
         <li class="mb-1">
@@ -55,6 +179,13 @@
         <li class="mb-1">
             <a class="flex items-center {% if request.resolver_match.url_name == 'liste_produits' %}bg-primary-container text-on-primary-container font-bold{% else %}text-on-surface-variant hover:bg-surface-container-high{% endif %} mx-2 py-2 px-md rounded-lg transition-colors" href="{% url 'stock:liste_produits' %}">
                 <span class="material-symbols-outlined mr-2">inventory_2</span> Produits
+            </a>
+        </li>
+        {% endif %}
+        {% if perms.stock.view_mouvementstock %}
+        <li class="mb-1">
+            <a class="flex items-center {% if request.resolver_match.url_name == 'historique_mouvements' or request.resolver_match.url_name == 'nouveau_mouvement' %}bg-primary-container text-on-primary-container font-bold{% else %}text-on-surface-variant hover:bg-surface-container-high{% endif %} mx-2 py-2 px-md rounded-lg transition-colors" href="{% url 'stock:historique_mouvements' %}">
+                <span class="material-symbols-outlined mr-2">sync_alt</span> Mouvements de stock
             </a>
         </li>
         {% endif %}
@@ -121,8 +252,18 @@
             </a>
         </li>
         {% endif %}
+        {% if perms.parametres.change_parametresmagasin %}
+        <li class="mb-1">
+            <a class="flex items-center {% if request.resolver_match.url_name == 'parametres' %}bg-primary-container text-on-primary-container font-bold{% else %}text-on-surface-variant hover:bg-surface-container-high{% endif %} mx-2 py-2 px-md rounded-lg transition-colors" href="{% url 'parametres:parametres' %}">
+                <span class="material-symbols-outlined mr-2">settings</span> Paramètres
+            </a>
+        </li>
+        {% endif %}
     </ul>
     <div class="mt-auto px-lg pt-md border-t border-outline-variant">
+        <a href="{% url 'accounts:mon_compte' %}" class="flex items-center {% if request.resolver_match.url_name == 'mon_compte' %}bg-primary-container text-on-primary-container font-bold{% else %}text-on-surface-variant hover:bg-surface-container-high{% endif %} mx-2 mb-1 py-2 px-md rounded-lg transition-colors">
+            <span class="material-symbols-outlined mr-2">account_circle</span> Mon compte
+        </a>
         <form method="POST" action="{% url 'accounts:logout' %}">
             {% csrf_token %}
             <button type="submit" class="w-full flex items-center text-on-surface-variant hover:bg-surface-container-high mx-2 py-2 px-md rounded-lg transition-colors text-left bg-transparent border-0 cursor-pointer">
@@ -132,21 +273,43 @@
     </div>
 </nav>
 
-<!-- Topbar -->
+<!-- Topbar desktop -->
 <header class="hidden md:flex bg-surface-container-lowest border-b border-outline-variant shadow-sm fixed top-0 right-0 left-0 h-16 items-center justify-end px-lg z-50 ml-[260px]">
+    <button type="button" onclick="basculerThemeRapide()" class="p-2 rounded-lg hover:bg-surface-container-high transition-colors mr-2" aria-label="Changer de thème" title="Clair / sombre">
+        <span id="icone-theme-desktop" class="material-symbols-outlined text-on-surface-variant">dark_mode</span>
+    </button>
     <a href="{% url 'accounts:notifications' %}" class="relative p-2 rounded-lg hover:bg-surface-container-high transition-colors mr-2">
         <span class="material-symbols-outlined text-on-surface-variant">notifications</span>
         {% if nb_notifications_non_lues > 0 %}
         <span class="absolute top-0 right-0 bg-error text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">{{ nb_notifications_non_lues }}</span>
         {% endif %}
     </a>
-    <div class="flex items-center space-x-sm border-l border-outline-variant pl-lg">
-        <span class="text-sm text-secondary font-semibold">{{ request.user.username }}</span>
+    <a href="{% url 'accounts:mon_compte' %}" class="flex items-center space-x-sm border-l border-outline-variant pl-lg hover:text-primary transition-colors">
+        <span class="text-sm text-secondary capitalize font-semibold">{{ request.user.username }}</span>
+    </a>
+</header>
+
+<!-- Topbar mobile : hamburger + logo + notifications -->
+<header class="flex md:hidden bg-surface-container-lowest border-b border-outline-variant shadow-sm fixed top-0 right-0 left-0 h-16 items-center justify-between px-md z-50">
+    <button type="button" onclick="toggleSidebar()" class="p-2 -ml-2 text-on-surface-variant" aria-label="Ouvrir le menu">
+        <span class="material-symbols-outlined">menu</span>
+    </button>
+    {% if config_magasin.logo %}<img src="{{ config_magasin.logo.url }}" alt="{{ config_magasin.nom_magasin }}" class="h-8">{% else %}<img src="{% static 'img/logo.png' %}" alt="{{ config_magasin.nom_magasin }}" class="h-8">{% endif %}
+    <div class="flex items-center">
+        <button type="button" onclick="basculerThemeRapide()" class="p-2 rounded-lg hover:bg-surface-container-high transition-colors" aria-label="Changer de thème">
+            <span id="icone-theme-mobile" class="material-symbols-outlined text-on-surface-variant">dark_mode</span>
+        </button>
+        <a href="{% url 'accounts:notifications' %}" class="relative p-2 rounded-lg hover:bg-surface-container-high transition-colors">
+            <span class="material-symbols-outlined text-on-surface-variant">notifications</span>
+            {% if nb_notifications_non_lues > 0 %}
+            <span class="absolute top-0 right-0 bg-error text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">{{ nb_notifications_non_lues }}</span>
+            {% endif %}
+        </a>
     </div>
 </header>
 
 <!-- Contenu -->
-<main class="md:ml-[260px] md:pt-16 p-md md:p-xl max-w-[1440px] mx-auto">
+<main class="mt-16 md:ml-[260px] p-md md:p-xl max-w-[1440px] mx-auto">
     {% if messages %}
     <div class="mb-lg space-y-2">
         {% for message in messages %}
@@ -158,6 +321,23 @@
     {% endif %}
     {% block content %}{% endblock %}
 </main>
+
+<script>
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('-translate-x-full');
+        document.getElementById('sidebar-overlay').classList.toggle('hidden');
+    }
+
+    // Referme le tiroir après un clic sur un lien du menu, en mobile uniquement.
+    document.querySelectorAll('#sidebar a, #sidebar button[type="submit"]').forEach(function (el) {
+        el.addEventListener('click', function () {
+            if (window.innerWidth < 768) {
+                document.getElementById('sidebar').classList.add('-translate-x-full');
+                document.getElementById('sidebar-overlay').classList.add('hidden');
+            }
+        });
+    });
+</script>
 
 </body>
 </html>

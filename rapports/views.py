@@ -18,23 +18,20 @@ def tableau_de_bord(request):
     aujourdhui = timezone.localdate()
     debut_mois = aujourdhui.replace(day=1)
 
-    est_admin_ou_responsable = (
-        utilisateur.is_superuser
-        or _est_dans_groupe(utilisateur, 'Administrateur')
-        or _est_dans_groupe(utilisateur, 'Responsable')
-    )
+    est_admin = utilisateur.is_superuser or _est_dans_groupe(utilisateur, 'Administrateur')
     est_gestionnaire = _est_dans_groupe(utilisateur, 'Gestionnaire de stock')
-    est_vendeur = _est_dans_groupe(utilisateur, 'Vendeur') and not est_admin_ou_responsable and not est_gestionnaire
+    est_magasinier = _est_dans_groupe(utilisateur, 'Magasinier') and not est_admin and not est_gestionnaire
+    est_caissier = _est_dans_groupe(utilisateur, 'Caissier') and not est_admin and not est_gestionnaire and not est_magasinier
 
     context = {'utilisateur': utilisateur}
 
     # --- Compte sans rôle assigné : page d'accueil neutre, jamais de 403 ---
-    if not (est_admin_ou_responsable or est_gestionnaire or est_vendeur):
+    if not (est_admin or est_gestionnaire or est_magasinier or est_caissier):
         context['role_dashboard'] = 'aucun_role'
         return render(request, 'rapports/tableau_de_bord.html', context)
 
-    # --- Vue Vendeur : centrée sur SES ventes personnelles ---
-    if est_vendeur:
+    # --- Vue Caissier : centrée sur SES ventes personnelles ---
+    if est_caissier:
         mes_ventes_jour = Vente.objects.filter(vendeur=utilisateur, date_vente__date=aujourdhui)
         mes_ventes_mois = Vente.objects.filter(vendeur=utilisateur, date_vente__date__gte=debut_mois)
 
@@ -45,6 +42,21 @@ def tableau_de_bord(request):
             'mes_ventes_mois_montant': sum(v.total for v in mes_ventes_mois),
             'mes_ventes_mois_nombre': mes_ventes_mois.count(),
             'mes_dernieres_ventes': Vente.objects.filter(vendeur=utilisateur).order_by('-date_vente')[:8],
+            'produits_en_rupture': Produit.objects.filter(quantite_stock=0).order_by('nom')[:8],
+        })
+        return render(request, 'rapports/tableau_de_bord.html', context)
+
+    # --- Vue Magasinier : centrée sur les réceptions à faire et les mouvements de stock ---
+    if est_magasinier:
+        achats_a_receptionner = Achat.objects.filter(
+            statut__in=[Achat.EN_ATTENTE, Achat.COMMANDE]
+        ).select_related('fournisseur').order_by('-date_achat')
+
+        context.update({
+            'role_dashboard': 'magasinier',
+            'achats_a_receptionner': achats_a_receptionner[:8],
+            'nb_achats_a_receptionner': achats_a_receptionner.count(),
+            'derniers_mouvements': MouvementStock.objects.select_related('produit').order_by('-date')[:8],
             'produits_en_rupture': Produit.objects.filter(quantite_stock=0).order_by('nom')[:8],
         })
         return render(request, 'rapports/tableau_de_bord.html', context)
@@ -70,7 +82,7 @@ def tableau_de_bord(request):
         })
         return render(request, 'rapports/tableau_de_bord.html', context)
 
-    # --- Vue Administrateur / Responsable : vue d'ensemble complète du magasin ---
+    # --- Vue Administrateur : vue d'ensemble complète du magasin ---
     ventes_du_jour = Vente.objects.filter(date_vente__date=aujourdhui)
     total_ventes_jour = sum(v.total for v in ventes_du_jour)
 

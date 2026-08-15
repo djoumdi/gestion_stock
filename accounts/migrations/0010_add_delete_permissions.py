@@ -1,4 +1,5 @@
 from django.db import migrations
+from ._permissions_utils import forcer_creation_permissions
 
 
 PERMS_PAR_GROUPE = {
@@ -9,6 +10,8 @@ PERMS_PAR_GROUPE = {
 
 
 def ajouter_permissions_suppression(apps, schema_editor):
+    forcer_creation_permissions(apps, schema_editor)
+
     Group = apps.get_model('auth', 'Group')
     Permission = apps.get_model('auth', 'Permission')
 

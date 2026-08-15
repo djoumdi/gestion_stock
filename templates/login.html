@@ -4,7 +4,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>TechStock - Connexion</title>
+    <title>{{ config_magasin.nom_magasin }} - Connexion</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
@@ -17,7 +17,7 @@
 <div class="w-full max-w-[440px] bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
 
     <div class="px-8 pt-8 pb-6 flex flex-col items-center text-center">
-        <img src="{% static 'img/logo.png' %}" alt="TechStock" class="w-32 mb-2">
+        {% if config_magasin.logo %}<img src="{{ config_magasin.logo.url }}" alt="{{ config_magasin.nom_magasin }}" class="w-32 mb-2">{% else %}<img src="{% static 'img/logo.png' %}" alt="{{ config_magasin.nom_magasin }}" class="w-32 mb-2">{% endif %}
     </div>
 
     <div class="px-8 pb-8">

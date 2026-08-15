@@ -15,7 +15,7 @@ from accounts.notifications import enregistrer_action
 @permission_required('ventes.view_vente', raise_exception=True)
 def liste_ventes(request):
     peut_tout_voir = request.user.is_superuser or request.user.groups.filter(
-        name__in=['Administrateur', 'Responsable']
+        name__in=['Administrateur']
     ).exists()
 
     if peut_tout_voir:

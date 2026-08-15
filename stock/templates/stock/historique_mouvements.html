@@ -1,7 +1,7 @@
 <!-- stock/templates/stock/historique_mouvements.html -->
 {% extends 'base.html' %}
 
-{% block title %}Historique des mouvements - TechStock{% endblock %}
+{% block title %}Historique des mouvements - {{ config_magasin.nom_magasin }}{% endblock %}
 
 {% block content %}
 <div class="mb-lg">
@@ -13,6 +13,14 @@
     <h2 class="text-3xl font-bold text-on-surface">Historique des mouvements</h2>
     <p class="text-secondary mt-1">Entrées, sorties et ajustements de stock — toutes origines confondues</p>
 </div>
+
+{% if perms.stock.add_mouvementstock %}
+<div class="mb-lg">
+    <a href="{% url 'stock:nouveau_mouvement' %}" class="bg-primary-container text-on-primary-container font-semibold py-2 px-md rounded-lg inline-flex items-center hover:bg-primary hover:text-white transition-colors shadow-sm">
+        <span class="material-symbols-outlined text-[18px] mr-1">add</span> Nouveau mouvement
+    </a>
+</div>
+{% endif %}
 
 <form method="GET" class="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-sm p-lg mb-lg">
     <div class="grid grid-cols-1 md:grid-cols-5 gap-md items-end">

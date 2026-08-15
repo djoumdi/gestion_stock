@@ -4,7 +4,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8"/>
-<title>Facture #{{ vente.id }} - TechStock</title>
+<title>Facture #{{ vente.id }} - {{ config_magasin.nom_magasin }}</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
@@ -21,7 +21,7 @@
 <body class="bg-gray-50 text-gray-900">
 
 <header class="no-print bg-white border-b border-gray-200 shadow-sm h-16 flex justify-between items-center px-6 fixed top-0 w-full z-50">
-    <img src="{% static 'img/logo.png' %}" alt="TechStock" class="h-10">
+    {% if config_magasin.logo %}<img src="{{ config_magasin.logo.url }}" alt="{{ config_magasin.nom_magasin }}" class="h-10">{% else %}<img src="{% static 'img/logo.png' %}" alt="{{ config_magasin.nom_magasin }}" class="h-10">{% endif %}
     <div class="flex items-center gap-3">
         <button onclick="window.print()" class="flex items-center gap-1 px-4 py-2 rounded bg-gray-100 border border-gray-300 hover:bg-gray-200 transition-colors text-sm font-semibold">
             <span class="material-symbols-outlined text-[18px]">print</span> Imprimer
@@ -42,7 +42,7 @@
                 <p class="text-sm text-gray-500 mt-2">Date : <span class="font-semibold text-gray-800">{{ vente.date_vente|date:"d/m/Y H:i" }}</span></p>
             </div>
             <div class="text-right">
-                <img src="{% static 'img/logo.png' %}" alt="TechStock" class="h-14 mb-1 ml-auto">
+                {% if config_magasin.logo %}<img src="{{ config_magasin.logo.url }}" alt="{{ config_magasin.nom_magasin }}" class="h-14 mb-1 ml-auto">{% else %}<img src="{% static 'img/logo.png' %}" alt="{{ config_magasin.nom_magasin }}" class="h-14 mb-1 ml-auto">{% endif %}
                 <p class="text-sm text-gray-500">Magasin informatique</p>
             </div>
         </div>

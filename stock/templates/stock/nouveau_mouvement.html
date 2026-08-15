@@ -1,0 +1,55 @@
+<!-- stock/templates/stock/nouveau_mouvement.html -->
+{% extends 'base.html' %}
+
+{% block title %}Nouveau mouvement - {{ config_magasin.nom_magasin }}{% endblock %}
+
+{% block content %}
+<div class="mb-lg">
+    <div class="text-sm text-secondary flex items-center gap-1 mb-1">
+        <a class="hover:text-primary transition-colors" href="{% url 'stock:historique_mouvements' %}">Mouvements de stock</a>
+        <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+        <span class="text-on-surface font-semibold">Nouveau mouvement</span>
+    </div>
+    <h2 class="text-3xl font-bold text-on-surface">Nouveau mouvement</h2>
+    <p class="text-secondary mt-1">Perte, casse, correction manuelle — hors achats, ventes et inventaires (déjà automatiques)</p>
+</div>
+
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg shadow-sm max-w-xl">
+    <form method="POST">
+        {% csrf_token %}
+
+        <div class="mb-lg">
+            <label class="block text-xs font-semibold text-secondary mb-1">Produit</label>
+            <select name="produit" required class="w-full bg-surface border border-outline-variant rounded p-2 focus:border-primary outline-none">
+                <option value="">-- Choisir un produit --</option>
+                {% for produit in produits %}
+                <option value="{{ produit.id }}">{{ produit.nom }} (stock actuel : {{ produit.quantite_stock }})</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-lg mb-lg">
+            <div>
+                <label class="block text-xs font-semibold text-secondary mb-1">Type</label>
+                <select name="type_mouvement" required class="w-full bg-surface border border-outline-variant rounded p-2 focus:border-primary outline-none">
+                    <option value="entree">Entrée (+)</option>
+                    <option value="sortie">Sortie (-)</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-secondary mb-1">Quantité</label>
+                <input name="quantite" type="number" min="1" required class="w-full bg-surface border border-outline-variant rounded p-2 font-mono focus:border-primary outline-none">
+            </div>
+        </div>
+
+        <div class="mb-lg">
+            <label class="block text-xs font-semibold text-secondary mb-1">Motif</label>
+            <input name="motif" type="text" required placeholder="Ex : Casse, produit périmé, correction d'écart..." class="w-full bg-surface border border-outline-variant rounded p-2 focus:border-primary outline-none">
+        </div>
+
+        <button type="submit" class="bg-primary-container text-on-primary-container font-semibold py-2 px-md rounded-lg hover:bg-primary hover:text-white transition-colors">
+            Enregistrer le mouvement
+        </button>
+    </form>
+</div>
+{% endblock %}
