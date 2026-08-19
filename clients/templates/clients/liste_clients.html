@@ -52,4 +52,16 @@
         </table>
     </div>
 </div>
+
+{% if clients.has_other_pages %}
+<div class="flex justify-center items-center gap-2 mt-lg">
+    {% if clients.has_previous %}
+    <a href="?page={{ clients.previous_page_number }}" class="px-3 py-2 rounded-lg border border-outline-variant text-on-surface-variant hover:bg-surface-container-high transition-colors">Précédent</a>
+    {% endif %}
+    <span class="text-sm text-secondary">Page {{ clients.number }} / {{ clients.paginator.num_pages }}</span>
+    {% if clients.has_next %}
+    <a href="?page={{ clients.next_page_number }}" class="px-3 py-2 rounded-lg border border-outline-variant text-on-surface-variant hover:bg-surface-container-high transition-colors">Suivant</a>
+    {% endif %}
+</div>
+{% endif %}
 {% endblock %}

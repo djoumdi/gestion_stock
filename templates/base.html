@@ -5,6 +5,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link rel="icon" type="image/png" sizes="32x32" href="{% static 'img/favicon-32x32.png' %}">
 <title>{% block title %}{{ config_magasin.nom_magasin }}{% endblock %}</title>
 
 <!-- Détection/application du thème AVANT tout rendu, pour éviter un flash de
@@ -119,6 +120,9 @@
         document.documentElement.classList.toggle('dark', sombre);
         localStorage.setItem('theme', valeur);
         mettreAJourIconeTheme();
+        // Si la page affiche des graphiques Chart.js (tableau de bord), on les
+        // recolore immédiatement plutôt que de recharger toute la page.
+        if (window.actualiserGraphiquesTheme) window.actualiserGraphiquesTheme();
 
         {% if request.user.is_authenticated %}
         fetch("{% url 'accounts:definir_theme' %}", {
@@ -161,14 +165,17 @@
 <!-- Fond sombre derrière la sidebar mobile, cliquable pour refermer -->
 <div id="sidebar-overlay" onclick="toggleSidebar()" class="hidden fixed inset-0 bg-black/50 z-[65] md:hidden"></div>
 
-<!-- Sidebar (fixe sur desktop, tiroir coulissant sur mobile) -->
 <nav id="sidebar" class="flex bg-surface-container-low text-primary fixed left-0 top-0 bottom-0 w-[260px] border-r border-outline-variant flex-col py-md z-[70] transform -translate-x-full transition-transform duration-300 ease-in-out md:translate-x-0">
-    <div class="px-lg pb-md mb-md border-b border-outline-variant flex items-center justify-between">
-        {% if config_magasin.logo %}<img src="{{ config_magasin.logo.url }}" alt="{{ config_magasin.nom_magasin }}" class="w-full max-w-[140px] mx-auto">{% else %}<img src="{% static 'img/logo.png' %}" alt="{{ config_magasin.nom_magasin }}" class="w-full max-w-[140px] mx-auto">{% endif %}
-        <button type="button" onclick="toggleSidebar()" class="md:hidden p-1 text-on-surface-variant" aria-label="Fermer le menu">
-            <span class="material-symbols-outlined">close</span>
-        </button>
-    </div>
+<div class="px-lg pb-md mb-md border-b border-outline-variant flex items-center justify-between">
+    {% if config_magasin and config_magasin.logo %}
+        <img src="{{ config_magasin.logo.url }}" alt="{{ config_magasin.nom_magasin|default:'Logo' }}" class="w-full max-w-[140px] mx-auto object-contain">
+    {% else %}
+        <img src="{% static 'img/logo.png' %}" alt="Logo" class="w-full max-w-[140px] mx-auto object-contain">
+    {% endif %}
+    <button type="button" onclick="toggleSidebar()" class="md:hidden p-1 text-on-surface-variant" aria-label="Fermer le menu">
+        <span class="material-symbols-outlined">close</span>
+    </button>
+</div>
     <ul class="flex-1 overflow-y-auto">
         <li class="mb-1">
             <a class="flex items-center {% if request.resolver_match.url_name == 'tableau_de_bord' %}bg-primary-container text-on-primary-container font-bold{% else %}text-on-surface-variant hover:bg-surface-container-high{% endif %} mx-2 py-2 px-md rounded-lg transition-colors" href="{% url 'rapports:tableau_de_bord' %}">
@@ -228,6 +235,13 @@
         <li class="mb-1">
             <a class="flex items-center {% if request.resolver_match.url_name == 'liste_ventes' %}bg-primary-container text-on-primary-container font-bold{% else %}text-on-surface-variant hover:bg-surface-container-high{% endif %} mx-2 py-2 px-md rounded-lg transition-colors" href="{% url 'ventes:liste_ventes' %}">
                 <span class="material-symbols-outlined mr-2">point_of_sale</span> Ventes
+            </a>
+        </li>
+        {% endif %}
+        {% if perms.ventes.view_devis %}
+        <li class="mb-1">
+            <a class="flex items-center {% if request.resolver_match.url_name == 'liste_devis' or request.resolver_match.url_name == 'detail_devis' or request.resolver_match.url_name == 'nouveau_devis' %}bg-primary-container text-on-primary-container font-bold{% else %}text-on-surface-variant hover:bg-surface-container-high{% endif %} mx-2 py-2 px-md rounded-lg transition-colors" href="{% url 'ventes:liste_devis' %}">
+                <span class="material-symbols-outlined mr-2">request_quote</span> Devis
             </a>
         </li>
         {% endif %}

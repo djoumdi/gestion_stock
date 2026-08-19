@@ -53,4 +53,16 @@
         </table>
     </div>
 </div>
+
+{% if fournisseurs.has_other_pages %}
+<div class="flex justify-center items-center gap-2 mt-lg">
+    {% if fournisseurs.has_previous %}
+    <a href="?page={{ fournisseurs.previous_page_number }}" class="px-3 py-2 rounded-lg border border-outline-variant text-on-surface-variant hover:bg-surface-container-high transition-colors">Précédent</a>
+    {% endif %}
+    <span class="text-sm text-secondary">Page {{ fournisseurs.number }} / {{ fournisseurs.paginator.num_pages }}</span>
+    {% if fournisseurs.has_next %}
+    <a href="?page={{ fournisseurs.next_page_number }}" class="px-3 py-2 rounded-lg border border-outline-variant text-on-surface-variant hover:bg-surface-container-high transition-colors">Suivant</a>
+    {% endif %}
+</div>
+{% endif %}
 {% endblock %}

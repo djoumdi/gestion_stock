@@ -21,8 +21,16 @@ def liste_notifications(request):
 @login_required
 @permission_required('accounts.view_historiqueaction', raise_exception=True)
 def liste_historique(request):
-    actions = HistoriqueAction.objects.select_related('utilisateur').all()[:200]
-    return render(request, 'historique.html', {'actions': actions})
+    actions = HistoriqueAction.objects.select_related('utilisateur').all()
+
+    type_selectionne = request.GET.get('type', '')
+    if type_selectionne in (HistoriqueAction.ACTION, HistoriqueAction.CONNEXION):
+        actions = actions.filter(type_action=type_selectionne)
+
+    return render(request, 'historique.html', {
+        'actions': actions[:200],
+        'type_selectionne': type_selectionne,
+    })
 
 
 @login_required

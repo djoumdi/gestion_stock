@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib import messages
+from django.core.paginator import Paginator
 from .models import Fournisseur
 from accounts.notifications import enregistrer_action
 
@@ -8,9 +9,13 @@ from accounts.notifications import enregistrer_action
 @login_required
 @permission_required('fournisseurs.view_fournisseur', raise_exception=True)
 def liste_fournisseurs(request):
-    fournisseurs = Fournisseur.objects.all().order_by('nom')
+    fournisseurs_qs = Fournisseur.objects.prefetch_related('produits').order_by('nom')
+    paginator = Paginator(fournisseurs_qs, 30)
+    fournisseurs = paginator.get_page(request.GET.get('page'))
+
     for f in fournisseurs:
-        f.nb_produits = f.produits.count()
+        f.nb_produits = len(f.produits.all())  # déjà en cache grâce au prefetch
+
     return render(request, 'fournisseurs/liste_fournisseurs.html', {'fournisseurs': fournisseurs})
 
 

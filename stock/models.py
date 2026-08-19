@@ -1,6 +1,7 @@
 # stock/models.py
 from django.db import models
 from django.conf import settings
+from cloudinary.models import CloudinaryField
 
 
 class Categorie(models.Model):
@@ -23,13 +24,13 @@ class Marque(models.Model):
 class Produit(models.Model):
     reference = models.CharField(max_length=50, unique=True, blank=True,
         help_text="Référence interne (SKU). Générée automatiquement si laissée vide.")
-    code_barres = models.CharField(max_length=50, blank=True,
+    code_barres = models.CharField(max_length=50, blank=True, db_index=True,
         help_text="Code EAN/UPC scanné ou saisi manuellement. Optionnel.")
-    nom = models.CharField(max_length=200)
+    nom = models.CharField(max_length=200, db_index=True)
     description = models.TextField(blank=True)
     marque = models.ForeignKey(Marque, on_delete=models.SET_NULL, null=True, blank=True, related_name='produits')
     fournisseur = models.ForeignKey('fournisseurs.Fournisseur', on_delete=models.SET_NULL, null=True, blank=True, related_name='produits')
-    image = models.ImageField(upload_to='produits/', blank=True, null=True)
+    image = CloudinaryField('image', folder='produits', blank=True, null=True)
     categorie = models.ForeignKey(Categorie, on_delete=models.SET_NULL, null=True, related_name='produits')
     prix_achat = models.DecimalField(max_digits=10, decimal_places=2)
     prix_vente = models.DecimalField(max_digits=10, decimal_places=2)
@@ -76,7 +77,7 @@ class MouvementStock(models.Model):
     type_mouvement = models.CharField(max_length=10, choices=TYPE_CHOICES)
     quantite = models.PositiveIntegerField()
     motif = models.CharField(max_length=200, blank=True)
-    date = models.DateTimeField(auto_now_add=True)
+    date = models.DateTimeField(auto_now_add=True, db_index=True)
 
     def save(self, *args, **kwargs):
         is_new = self._state.adding

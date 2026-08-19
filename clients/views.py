@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib import messages
+from django.core.paginator import Paginator
 from .models import Client
 from accounts.notifications import enregistrer_action
 
@@ -8,10 +9,15 @@ from accounts.notifications import enregistrer_action
 @login_required
 @permission_required('clients.view_client', raise_exception=True)
 def liste_clients(request):
-    clients = Client.objects.all().order_by('nom')
+    clients_qs = Client.objects.prefetch_related('ventes').order_by('nom')
+    paginator = Paginator(clients_qs, 30)
+    clients = paginator.get_page(request.GET.get('page'))
+
     for client in clients:
-        client.nb_ventes = client.ventes.count()
-        client.total_achats = sum(v.total for v in client.ventes.all())
+        ventes = client.ventes.all()  # déjà en cache grâce au prefetch, aucune requête ici
+        client.nb_ventes = len(ventes)
+        client.total_achats = sum(v.total for v in ventes)
+
     return render(request, 'clients/liste_clients.html', {'clients': clients})
 
 

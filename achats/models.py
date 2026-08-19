@@ -21,7 +21,7 @@ class Achat(models.Model):
     cree_par = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='achats_crees')
     notes = models.TextField(blank=True)
     statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default=EN_ATTENTE)
-    date_achat = models.DateTimeField(auto_now_add=True)
+    date_achat = models.DateTimeField(auto_now_add=True, db_index=True)
     # Jeton pour la page publique du bon de commande envoyée au fournisseur par
     # WhatsApp, sans exposer l'id interne ni exiger de connexion. Voir Facture.token
     # pour la même logique côté ventes.

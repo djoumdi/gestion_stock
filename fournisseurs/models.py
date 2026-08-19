@@ -3,7 +3,7 @@ from django.db import models
 
 
 class Fournisseur(models.Model):
-    nom = models.CharField(max_length=200)
+    nom = models.CharField(max_length=200, db_index=True)
     telephone = models.CharField(max_length=20, blank=True)
     email = models.EmailField(blank=True)
     adresse = models.CharField(max_length=255, blank=True)

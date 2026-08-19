@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load l10n %}
 
 {% block title %}{{ produit.nom }} - {{ config_magasin.nom_magasin }}{% endblock %}
 
@@ -56,11 +57,11 @@
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-lg mb-lg">
                     <div>
                         <label class="block text-xs font-semibold text-secondary mb-1">Prix de vente (FCFA)</label>
-                        <input id="input-prix-vente" name="prix_vente" class="w-full bg-surface border border-outline-variant rounded p-2 font-mono text-right focus:border-primary outline-none disabled:bg-surface-container-low disabled:text-on-surface-variant" type="number" step="0.01" value="{{ produit.prix_vente }}" required oninput="calculerMarge()" {% if not perms.stock.change_produit %}disabled{% endif %}>
+                        <input id="input-prix-vente" name="prix_vente" class="w-full bg-surface border border-outline-variant rounded p-2 font-mono text-right focus:border-primary outline-none disabled:bg-surface-container-low disabled:text-on-surface-variant" type="number" step="0.01" value="{{ produit.prix_vente|unlocalize }}" required oninput="calculerMarge()" {% if not perms.stock.change_produit %}disabled{% endif %}>
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-secondary mb-1">Prix d'achat (FCFA)</label>
-                        <input id="input-prix-achat" name="prix_achat" class="w-full bg-surface border border-outline-variant rounded p-2 font-mono text-right focus:border-primary outline-none disabled:bg-surface-container-low disabled:text-on-surface-variant" type="number" step="0.01" value="{{ produit.prix_achat }}" required oninput="calculerMarge()" {% if not perms.stock.change_produit %}disabled{% endif %}>
+                        <input id="input-prix-achat" name="prix_achat" class="w-full bg-surface border border-outline-variant rounded p-2 font-mono text-right focus:border-primary outline-none disabled:bg-surface-container-low disabled:text-on-surface-variant" type="number" step="0.01" value="{{ produit.prix_achat|unlocalize }}" required oninput="calculerMarge()" {% if not perms.stock.change_produit %}disabled{% endif %}>
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-secondary mb-1">Seuil minimum</label>

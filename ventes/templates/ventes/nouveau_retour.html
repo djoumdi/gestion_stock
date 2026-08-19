@@ -1,0 +1,69 @@
+<!-- ventes/templates/ventes/nouveau_retour.html -->
+{% extends 'base.html' %}
+
+{% block title %}Retour sur {{ vente.code }} - {{ config_magasin.nom_magasin }}{% endblock %}
+
+{% block content %}
+<div class="mb-lg">
+    <div class="text-sm text-secondary flex items-center gap-1 mb-1">
+        <a class="hover:text-primary transition-colors" href="{% url 'ventes:detail_vente' vente.pk %}">{{ vente.code }}</a>
+        <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+        <span class="text-on-surface font-semibold">Retour</span>
+    </div>
+    <h2 class="text-3xl font-bold text-on-surface">Nouveau retour</h2>
+    <p class="text-secondary mt-1">Sur la vente {{ vente.code }} — {{ vente.client|default:"Client anonyme" }}</p>
+</div>
+
+{% if not lignes_retournables %}
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg shadow-sm max-w-2xl">
+    <p class="text-secondary">Tous les produits de cette vente ont déjà été intégralement retournés — il n'y a plus rien à retourner ici.</p>
+    <a href="{% url 'ventes:detail_vente' vente.pk %}" class="inline-block mt-md text-primary font-semibold hover:underline">Retour à la vente</a>
+</div>
+{% else %}
+<form method="POST" class="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-sm p-lg max-w-3xl">
+    {% csrf_token %}
+
+    <h3 class="text-sm font-semibold text-secondary uppercase tracking-wider mb-2">Produits à retourner</h3>
+    <p class="text-xs text-secondary mb-md">Laisse à 0 les produits que le client ne retourne pas.</p>
+
+    <div class="bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden mb-lg">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-surface-container-low border-b border-outline-variant">
+                    <th class="py-2 px-md text-xs font-semibold text-secondary uppercase tracking-wider">Produit</th>
+                    <th class="py-2 px-md text-xs font-semibold text-secondary uppercase tracking-wider text-right">Vendu</th>
+                    <th class="py-2 px-md text-xs font-semibold text-secondary uppercase tracking-wider text-right">Déjà retourné</th>
+                    <th class="py-2 px-md text-xs font-semibold text-secondary uppercase tracking-wider text-right">Qté à retourner</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ligne in lignes_retournables %}
+                <tr class="border-b border-outline-variant last:border-0">
+                    <td class="py-2 px-md font-semibold text-on-surface">{{ ligne.produit.nom }}</td>
+                    <td class="py-2 px-md text-right font-mono text-on-surface-variant">{{ ligne.quantite }}</td>
+                    <td class="py-2 px-md text-right font-mono text-on-surface-variant">{{ ligne.quantite_deja_retournee }}</td>
+                    <td class="py-2 px-md text-right">
+                        <input type="number" name="quantite_{{ ligne.pk }}" min="0" max="{{ ligne.quantite_retournable }}" value="0"
+                               class="w-24 bg-surface border border-outline-variant rounded p-2 font-mono text-right focus:border-primary outline-none">
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="mb-lg">
+        <label class="block text-xs font-semibold text-secondary mb-1">Motif du retour</label>
+        <textarea name="motif" rows="2" required placeholder="Produit défectueux, erreur de commande, changement d'avis..."
+                  class="w-full bg-surface border border-outline-variant rounded p-2 focus:border-primary outline-none"></textarea>
+    </div>
+
+    <div class="pt-md border-t border-outline-variant">
+        <button type="submit" class="bg-primary-container text-on-primary-container font-semibold py-2 px-lg rounded-lg hover:bg-primary hover:text-white transition-colors">
+            Enregistrer le retour
+        </button>
+        <p class="text-xs text-secondary mt-2">Le stock des produits retournés sera automatiquement remis à jour et un avoir sera généré.</p>
+    </div>
+</form>
+{% endif %}
+{% endblock %}

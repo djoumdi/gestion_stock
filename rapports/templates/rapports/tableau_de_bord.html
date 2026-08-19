@@ -5,7 +5,7 @@
 
 {% block content %}
 <div class="mb-lg">
-    <h2 class="text-3xl capitalize font-bold text-on-surface">Bonjour, {{ utilisateur.first_name|default:utilisateur.username }}</h2>
+    <h2 class="text-3xl capitalize font-bold text-on-surface">Bonjour, {{ utilisateur.first_name|default:utilisateur.username }}<sup class="text-sm text-secondary">({{ role_dashboard|default:'Aucun rôle' }})</sup></h2>
     <p class="text-secondary mt-1">
         {% if role_dashboard == 'vendeur' %}Aperçu de vos ventes
         {% elif role_dashboard == 'gestionnaire' %}Aperçu du stock et des achats
@@ -57,7 +57,34 @@
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-lg">
-    <div class="lg:col-span-2 bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant overflow-hidden">
+    <div class="lg:col-span-2 bg-surface-container-lowest p-lg rounded-xl border border-outline-variant shadow-sm">
+        <div class="flex justify-between items-center mb-md">
+            <h3 class="text-lg font-bold">Mes ventes des 7 derniers jours</h3>
+            <span class="text-xs font-semibold text-secondary bg-surface-container-low px-2 py-1 rounded-full">7 derniers jours</span>
+        </div>
+        <div class="h-56">
+            <canvas id="graphiqueVentesPersonnelles"></canvas>
+        </div>
+    </div>
+
+    <div class="bg-surface-container-lowest p-lg rounded-xl border border-outline-variant shadow-sm">
+        <h3 class="text-lg font-bold mb-md">Produits en rupture</h3>
+        <p class="text-xs text-secondary mb-3">À ne pas proposer en vente pour le moment</p>
+        <div class="space-y-2">
+            {% for produit in produits_en_rupture %}
+            <div class="flex justify-between items-center py-2 border-b border-outline-variant last:border-0">
+                <span class="text-sm font-semibold">{{ produit.nom }}</span>
+                <span class="text-xs font-bold px-2 py-1 rounded-full bg-[#FEE2E2] text-[#991B1B]">Rupture</span>
+            </div>
+            {% empty %}
+            <p class="text-sm text-secondary">Aucun produit en rupture</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-lg mt-lg">
+    <div class="lg:col-span-3 bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant overflow-hidden">
         <div class="p-lg border-b border-outline-variant flex justify-between items-center">
             <h3 class="text-lg font-bold">Mes dernières ventes</h3>
             {% if perms.ventes.add_vente %}
@@ -89,21 +116,6 @@
             </table>
         </div>
     </div>
-
-    <div class="bg-surface-container-lowest p-lg rounded-xl border border-outline-variant shadow-sm">
-        <h3 class="text-lg font-bold mb-md">Produits en rupture</h3>
-        <p class="text-xs text-secondary mb-3">À ne pas proposer en vente pour le moment</p>
-        <div class="space-y-2">
-            {% for produit in produits_en_rupture %}
-            <div class="flex justify-between items-center py-2 border-b border-outline-variant last:border-0">
-                <span class="text-sm font-semibold">{{ produit.nom }}</span>
-                <span class="text-xs font-bold px-2 py-1 rounded-full bg-[#FEE2E2] text-[#991B1B]">Rupture</span>
-            </div>
-            {% empty %}
-            <p class="text-sm text-secondary">Aucun produit en rupture</p>
-            {% endfor %}
-        </div>
-    </div>
 </div>
 
 {% elif role_dashboard == 'gestionnaire' %}
@@ -129,6 +141,16 @@
         </div>
         <h3 class="text-xs font-semibold text-secondary uppercase tracking-wider mb-1">Achats en attente</h3>
         <span class="text-2xl font-bold text-on-surface">{{ nb_achats_en_attente }}</span>
+    </div>
+</div>
+
+<div class="bg-surface-container-lowest p-lg rounded-xl border border-outline-variant shadow-sm mb-lg">
+    <div class="flex justify-between items-center mb-md">
+        <h3 class="text-lg font-bold">Achats des 7 derniers jours</h3>
+        <span class="text-xs font-semibold text-secondary bg-surface-container-low px-2 py-1 rounded-full">7 derniers jours</span>
+    </div>
+    <div class="h-56">
+        <canvas id="graphiqueAchats"></canvas>
     </div>
 </div>
 
@@ -218,6 +240,16 @@
         </div>
         <h3 class="text-xs font-semibold text-secondary uppercase tracking-wider mb-1">Produits en rupture</h3>
         <span class="text-2xl font-bold text-on-surface">{{ produits_en_rupture|length }}</span>
+    </div>
+</div>
+
+<div class="bg-surface-container-lowest p-lg rounded-xl border border-outline-variant shadow-sm mb-lg">
+    <div class="flex justify-between items-center mb-md">
+        <h3 class="text-lg font-bold">Mouvements de stock des 7 derniers jours</h3>
+        <span class="text-xs font-semibold text-secondary bg-surface-container-low px-2 py-1 rounded-full">7 derniers jours</span>
+    </div>
+    <div class="h-56">
+        <canvas id="graphiqueMouvements"></canvas>
     </div>
 </div>
 
@@ -311,16 +343,31 @@
     </div>
 </div>
 
+<!-- LIGNE 1 GRAPHIQUES : Ventes & Répartition par Catégorie -->
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-lg mb-lg">
     <div class="lg:col-span-2 bg-surface-container-lowest p-lg rounded-xl border border-outline-variant shadow-sm">
-        <h3 class="text-lg font-bold mb-md">Ventes des 7 derniers jours</h3>
+        <div class="flex justify-between items-center mb-md">
+            <h3 class="text-lg font-bold">Ventes des 7 derniers jours</h3>
+            <span class="text-xs font-semibold text-secondary bg-surface-container-low px-2 py-1 rounded-full">7 derniers jours</span>
+        </div>
         <div class="h-64">
             <canvas id="ventesChart"></canvas>
         </div>
     </div>
 
     <div class="bg-surface-container-lowest p-lg rounded-xl border border-outline-variant shadow-sm">
-        <h3 class="text-lg font-bold mb-md">Stock faible</h3>
+        <h3 class="text-lg font-bold mb-md">Ventes par catégorie</h3>
+        <div class="h-40 flex items-center justify-center">
+            <canvas id="categoriesChart"></canvas>
+        </div>
+        <div id="legendeCategories" class="space-y-2 mt-md"></div>
+    </div>
+</div>
+
+<!-- LIGNE 2 : Stock Faible & Dernières ventes -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-lg mb-lg">
+    <div class="bg-surface-container-lowest p-lg rounded-xl border border-outline-variant shadow-sm">
+        <h3 class="text-lg font-bold mb-md">Stock faible / alerte</h3>
         <div class="space-y-2">
             {% for produit in produits_en_alerte %}
             <a href="{% url 'stock:detail_produit' produit.pk %}" class="flex justify-between items-center py-2 border-b border-outline-variant last:border-0 hover:text-primary transition-colors">
@@ -332,69 +379,181 @@
             {% endfor %}
         </div>
     </div>
-</div>
 
-<div class="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant overflow-hidden">
-    <div class="p-lg border-b border-outline-variant">
-        <h3 class="text-lg font-bold">Dernières ventes</h3>
-    </div>
-    <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse">
-            <thead>
-                <tr class="bg-surface-container-low border-b border-outline-variant">
-                    <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider">N°</th>
-                    <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider">Client</th>
-                    <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider">Date</th>
-                    <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider text-right">Total</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for vente in dernieres_ventes %}
-                <tr onclick="window.location='{% url 'ventes:detail_vente' vente.pk %}'" class="cursor-pointer border-b border-outline-variant hover:bg-surface-container-low transition-colors last:border-0">
-                    <td class="py-3 px-md font-mono text-secondary">#{{ vente.id }}</td>
-                    <td class="py-3 px-md font-semibold text-on-surface">{{ vente.client|default:"Client anonyme" }}</td>
-                    <td class="py-3 px-md text-on-surface-variant">{{ vente.date_vente|date:"d/m/Y H:i" }}</td>
-                    <td class="py-3 px-md text-right font-mono font-bold text-on-surface">{{ vente.total }} FCFA</td>
-                </tr>
-                {% empty %}
-                <tr><td colspan="4" class="py-6 px-md text-center text-secondary">Aucune vente pour le moment</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div class="lg:col-span-2 bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant overflow-hidden">
+        <div class="p-lg border-b border-outline-variant">
+            <h3 class="text-lg font-bold">Dernières ventes</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-surface-container-low border-b border-outline-variant">
+                        <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider">N°</th>
+                        <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider">Client</th>
+                        <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider">Date</th>
+                        <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider text-right">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for vente in dernieres_ventes %}
+                    <tr onclick="window.location='{% url 'ventes:detail_vente' vente.pk %}'" class="cursor-pointer border-b border-outline-variant hover:bg-surface-container-low transition-colors last:border-0">
+                        <td class="py-3 px-md font-mono text-secondary">#{{ vente.id }}</td>
+                        <td class="py-3 px-md font-semibold text-on-surface">{{ vente.client|default:"Client anonyme" }}</td>
+                        <td class="py-3 px-md text-on-surface-variant">{{ vente.date_vente|date:"d/m/Y H:i" }}</td>
+                        <td class="py-3 px-md text-right font-mono font-bold text-on-surface">{{ vente.total }} FCFA</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" class="py-6 px-md text-center text-secondary">Aucune vente pour le moment</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
+{% endif %}
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    const ctx = document.getElementById('ventesChart').getContext('2d');
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: {{ labels_jours|safe }},
-            datasets: [{
-                label: 'Ventes (FCFA)',
-                data: {{ totaux_jours|safe }},
-                borderColor: '#2563eb',
-                backgroundColor: 'rgba(37, 99, 235, 0.1)',
-                borderWidth: 2,
-                tension: 0.4,
-                fill: true,
-                pointBackgroundColor: '#ffffff',
-                pointBorderColor: '#2563eb',
-                pointBorderWidth: 2,
-                pointRadius: 4,
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-                y: { beginAtZero: true, grid: { color: '#e1e3e4' } },
-                x: { grid: { display: false } }
+(function() {
+    // Couleurs lues depuis les variables CSS du thème actif (voir base.html) :
+    // les graphiques s'adaptent donc automatiquement au clair/sombre, y compris
+    // juste après une bascule instantanée, sans recharger la page.
+    function couleurCSS(nomVariable, alpha) {
+        const valeurs = getComputedStyle(document.documentElement).getPropertyValue(nomVariable).trim();
+        return alpha !== undefined ? `rgb(${valeurs} / ${alpha})` : `rgb(${valeurs})`;
+    }
+
+    const PALETTE_CATEGORIES = ['#2563eb', '#0d9488', '#f59e0b', '#ef4444', '#8b5cf6'];
+    const instancesGraphiques = [];
+
+    function optionsAxes() {
+        return {
+            y: { beginAtZero: true, grid: { color: couleurCSS('--color-outline-variant') }, ticks: { color: couleurCSS('--color-on-surface-variant') } },
+            x: { grid: { display: false }, ticks: { color: couleurCSS('--color-on-surface-variant') } }
+        };
+    }
+
+    function creerGraphiqueLigne(idCanvas, labels, donnees, libelle) {
+        const canvas = document.getElementById(idCanvas);
+        if (!canvas) return;
+        const graphique = new Chart(canvas.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: libelle,
+                    data: donnees,
+                    borderColor: couleurCSS('--color-primary'),
+                    backgroundColor: couleurCSS('--color-primary-container', 0.12),
+                    borderWidth: 2,
+                    tension: 0.4,
+                    fill: true,
+                    pointBackgroundColor: couleurCSS('--color-surface-container-lowest'),
+                    pointBorderColor: couleurCSS('--color-primary'),
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: optionsAxes(),
             }
+        });
+        instancesGraphiques.push(graphique);
+    }
+
+    function creerGraphiqueBarres(idCanvas, labels, jeuxDeDonnees) {
+        const canvas = document.getElementById(idCanvas);
+        if (!canvas) return;
+        const graphique = new Chart(canvas.getContext('2d'), {
+            type: 'bar',
+            data: { labels: labels, datasets: jeuxDeDonnees },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: jeuxDeDonnees.length > 1, labels: { color: couleurCSS('--color-on-surface-variant') } } },
+                scales: optionsAxes(),
+            }
+        });
+        instancesGraphiques.push(graphique);
+    }
+
+    function creerGraphiqueCategories() {
+        const canvas = document.getElementById('categoriesChart');
+        if (!canvas) return;
+        const labels = {{ categories_labels|default:"[]"|safe }};
+        const donnees = {{ categories_data|default:"[]"|safe }};
+        const total = donnees.reduce((somme, v) => somme + v, 0);
+
+        const graphique = new Chart(canvas.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: donnees,
+                    backgroundColor: PALETTE_CATEGORIES,
+                    borderWidth: 2,
+                    borderColor: couleurCSS('--color-surface-container-lowest'),
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '70%',
+                plugins: { legend: { display: false } },
+            }
+        });
+        instancesGraphiques.push(graphique);
+
+        // Légende personnalisée avec pourcentages, sous le graphique.
+        const conteneurLegende = document.getElementById('legendeCategories');
+        if (conteneurLegende) {
+            conteneurLegende.innerHTML = labels.map((label, i) => {
+                const pourcentage = total > 0 ? Math.round((donnees[i] / total) * 100) : 0;
+                return `<div class="flex items-center justify-between text-sm">
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full inline-block" style="background-color:${PALETTE_CATEGORIES[i % PALETTE_CATEGORIES.length]}"></span>
+                        <span class="text-on-surface-variant">${label}</span>
+                    </div>
+                    <span class="font-bold text-on-surface">${pourcentage}%</span>
+                </div>`;
+            }).join('') || '<p class="text-sm text-secondary text-center">Aucune vente enregistrée</p>';
         }
-    });
+    }
+
+    // --- Un seul de ces blocs trouvera son canvas selon le rôle connecté ---
+    creerGraphiqueLigne('ventesChart', {{ labels_jours|default:"[]"|safe }}, {{ totaux_jours|default:"[]"|safe }}, 'Ventes (FCFA)');
+    creerGraphiqueCategories();
+    creerGraphiqueLigne('graphiqueVentesPersonnelles', {{ labels_jours|default:"[]"|safe }}, {{ mes_totaux_jours|default:"[]"|safe }}, 'Mes ventes (FCFA)');
+    creerGraphiqueBarres('graphiqueAchats', {{ labels_jours|default:"[]"|safe }}, [{
+        label: 'Achats (FCFA)',
+        data: {{ achats_totaux_jours|default:"[]"|safe }},
+        backgroundColor: couleurCSS('--color-primary-container', 0.7),
+        borderRadius: 4,
+    }]);
+    creerGraphiqueBarres('graphiqueMouvements', {{ labels_jours|default:"[]"|safe }}, [
+        { label: 'Entrées', data: {{ entrees_jours|default:"[]"|safe }}, backgroundColor: '#10b981', borderRadius: 4 },
+        { label: 'Sorties', data: {{ sorties_jours|default:"[]"|safe }}, backgroundColor: '#ef4444', borderRadius: 4 },
+    ]);
+
+    // Rafraîchit les couleurs des graphiques après une bascule de thème
+    // instantanée (voir appliquerTheme dans base.html), sans recharger la page.
+    window.actualiserGraphiquesTheme = function() {
+        instancesGraphiques.forEach(graphique => {
+            if (graphique.options.scales) {
+                if (graphique.options.scales.x) {
+                    graphique.options.scales.x.ticks.color = couleurCSS('--color-on-surface-variant');
+                }
+                if (graphique.options.scales.y) {
+                    graphique.options.scales.y.grid.color = couleurCSS('--color-outline-variant');
+                    graphique.options.scales.y.ticks.color = couleurCSS('--color-on-surface-variant');
+                }
+            }
+            graphique.update();
+        });
+    };
+})();
 </script>
-{% endif %}
 {% endblock %}

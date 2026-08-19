@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
+from django.core.paginator import Paginator
 from django.db import transaction
 from django.http import JsonResponse, FileResponse
 from django.urls import reverse
@@ -15,7 +16,9 @@ from accounts.notifications import notifier_utilisateur, notifier_administrateur
 @login_required
 @permission_required('achats.view_achat', raise_exception=True)
 def liste_achats(request):
-    achats = Achat.objects.select_related('fournisseur', 'cree_par').all().order_by('-date_achat')
+    achats_qs = Achat.objects.select_related('fournisseur', 'cree_par').order_by('-date_achat')
+    paginator = Paginator(achats_qs, 30)
+    achats = paginator.get_page(request.GET.get('page'))
     return render(request, 'achats/liste_achats.html', {'achats': achats})
 
 
@@ -70,7 +73,7 @@ def nouvel_achat(request):
             return redirect('achats:nouvel_achat')
 
     fournisseurs = Fournisseur.objects.filter(actif=True)
-    produits = Produit.objects.all()
+    produits = Produit.objects.only('id', 'nom', 'prix_achat')
 
     return render(request, 'achats/nouvel_achat.html', {
         'fournisseurs': fournisseurs,

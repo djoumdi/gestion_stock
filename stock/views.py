@@ -1,11 +1,12 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib import messages
-from django.db.models import ProtectedError
+from django.core.paginator import Paginator
+from django.db.models import ProtectedError, Q
 from django.utils import timezone
 from django.http import FileResponse
 from .models import Produit, Categorie, Marque, MouvementStock, Inventaire, LigneInventaire
-from .import_export import exporter_produits_xlsx, importer_produits_xlsx
+from .import_export import exporter_produits_xlsx, importer_produits_xlsx, exporter_inventaire_xlsx
 from fournisseurs.models import Fournisseur
 from accounts.notifications import notifier_utilisateur, notifier_administrateurs, enregistrer_action
 
@@ -13,9 +14,27 @@ from accounts.notifications import notifier_utilisateur, notifier_administrateur
 @login_required
 @permission_required('stock.view_produit', raise_exception=True)
 def liste_produits(request):
-    produits = Produit.objects.all().order_by('nom')
+    produits_qs = Produit.objects.select_related('categorie', 'marque').order_by('nom')
+
+    categorie_id = request.GET.get('categorie', '')
+    if categorie_id:
+        produits_qs = produits_qs.filter(categorie_id=categorie_id)
+
+    recherche = request.GET.get('q', '').strip()
+    if recherche:
+        produits_qs = produits_qs.filter(
+            Q(nom__icontains=recherche) | Q(reference__icontains=recherche)
+        )
+
+    paginator = Paginator(produits_qs, 30)
+    produits = paginator.get_page(request.GET.get('page'))
     categories = Categorie.objects.all().order_by('nom')
-    return render(request, 'stock/liste_produits.html', {'produits': produits, 'categories': categories})
+    return render(request, 'stock/liste_produits.html', {
+        'produits': produits,
+        'categories': categories,
+        'categorie_selectionnee': categorie_id,
+        'recherche': recherche,
+    })
 
 
 @login_required
@@ -153,6 +172,15 @@ def detail_produit(request, pk):
     return render(request, 'stock/detail_produit.html', {
         'produit': produit,
         'marques': Marque.objects.all(),
+        # Formatage en Python (jamais soumis à la locale, contrairement au rendu
+        # template) pour que ces valeurs restent compatibles avec un <input
+        # type="number">, qui exige un point décimal quelle que soit la langue
+        # du site (LANGUAGE_CODE = 'fr-fr' insère sinon une virgule -> champ vidé
+        # silencieusement par le navigateur).
+        'prix_vente_brut': str(produit.prix_vente),
+        'prix_achat_brut': str(produit.prix_achat),
+        'seuil_alerte_brut': str(produit.seuil_alerte),
+        'seuil_max_brut': str(produit.seuil_max) if produit.seuil_max is not None else '',
     })
 
 
@@ -231,7 +259,6 @@ def historique_mouvements(request):
     if date_fin:
         mouvements = mouvements.filter(date__date__lte=date_fin)
 
-    from django.core.paginator import Paginator
     pagination = Paginator(mouvements, 50)
     page = pagination.get_page(request.GET.get('page'))
 
@@ -301,7 +328,7 @@ def nouveau_mouvement(request):
 @login_required
 @permission_required('stock.view_inventaire', raise_exception=True)
 def liste_inventaires(request):
-    inventaires = Inventaire.objects.all().order_by('-date_creation')
+    inventaires = Inventaire.objects.select_related('cree_par').order_by('-date_creation')
     return render(request, 'stock/liste_inventaires.html', {'inventaires': inventaires})
 
 
@@ -387,3 +414,11 @@ def detail_inventaire(request, pk):
             return redirect('stock:detail_inventaire', pk=inventaire.pk)
 
     return render(request, 'stock/detail_inventaire.html', {'inventaire': inventaire})
+
+
+@login_required
+@permission_required('stock.view_inventaire', raise_exception=True)
+def exporter_inventaire(request, pk):
+    inventaire = get_object_or_404(Inventaire, pk=pk)
+    buffer = exporter_inventaire_xlsx(inventaire)
+    return FileResponse(buffer, as_attachment=True, filename=f'{inventaire.code}.xlsx')

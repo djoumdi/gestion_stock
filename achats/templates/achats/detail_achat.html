@@ -5,7 +5,7 @@
 {% block title %}{{ achat.code }} - {{ config_magasin.nom_magasin }}{% endblock %}
 
 {% block content %}
-<div class="flex justify-between items-start mb-lg">
+<div class="flex flex-col sm:flex-row justify-between items-start mb-lg">
     <div>
         <div class="text-sm text-secondary flex items-center gap-1 mb-1">
             <a class="hover:text-primary transition-colors" href="{% url 'achats:liste_achats' %}">Achats</a>
@@ -25,15 +25,15 @@
 </div>
 
 {% lien_whatsapp achat.fournisseur.telephone message_whatsapp as url_whatsapp %}
-<div class="mb-lg flex items-center gap-3">
-    <a href="{% url 'achats:bon_commande_public' achat.token %}" target="_blank" class="bg-surface-container-lowest border border-outline-variant text-on-surface font-semibold py-2 px-md rounded-lg flex items-center hover:bg-surface-container-high transition-colors shadow-sm">
+<div class="mb-lg flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+    <a href="{% url 'achats:bon_commande_public' achat.token %}" target="_blank" class="bg-surface-container-lowest border border-outline-variant text-on-surface font-semibold py-2 px-md rounded-lg flex items-center justify-center hover:bg-surface-container-high transition-colors shadow-sm w-full sm:w-auto">
         <span class="material-symbols-outlined text-[18px] mr-1">description</span> Aperçu
     </a>
-    <a href="{% url 'achats:bon_commande_pdf' achat.pk %}" target="_blank" class="bg-surface-container-lowest border border-outline-variant text-on-surface font-semibold py-2 px-md rounded-lg flex items-center hover:bg-surface-container-high transition-colors shadow-sm">
+    <a href="{% url 'achats:bon_commande_pdf' achat.pk %}" target="_blank" class="bg-surface-container-lowest border border-outline-variant text-on-surface font-semibold py-2 px-md rounded-lg flex items-center justify-center hover:bg-surface-container-high transition-colors shadow-sm w-full sm:w-auto">
         <span class="material-symbols-outlined text-[18px] mr-1">picture_as_pdf</span> Télécharger le PDF
     </a>
     {% if url_whatsapp %}
-    <a href="{{ url_whatsapp }}" target="_blank" class="inline-flex items-center bg-[#25D366] text-white font-semibold py-2 px-md rounded-lg hover:brightness-95 transition-all shadow-sm">
+    <a href="{{ url_whatsapp }}" target="_blank" class="inline-flex items-center justify-center bg-[#25D366] text-white font-semibold py-2 px-md rounded-lg hover:brightness-95 transition-all shadow-sm w-full sm:w-auto">
         <span class="material-symbols-outlined text-[18px] mr-1">chat</span> Envoyer via WhatsApp
     </a>
     {% endif %}

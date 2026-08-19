@@ -1,14 +1,14 @@
 from django.db import models
 from django.core.exceptions import ValidationError
-
+from cloudinary.models import CloudinaryField
 
 class ParametresMagasin(models.Model):
     """Configuration générale du magasin. Toujours un seul enregistrement
     (pk=1) — utiliser ParametresMagasin.charger() pour y accéder."""
 
     nom_magasin = models.CharField(max_length=150, default="TechStock")
-    logo = models.ImageField(upload_to='parametres/', blank=True, null=True)
     adresse = models.CharField(max_length=255, blank=True)
+    logo = CloudinaryField('image', folder='parametres', blank=True, null=True)
     telephone = models.CharField(max_length=30, blank=True)
     email = models.EmailField(blank=True)
 
