@@ -1,0 +1,77 @@
+{% extends 'commandes/_portail_base.html' %}
+{% block title %}{{ commande.code }} - {{ config_magasin.nom_magasin }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="flex justify-between items-start mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">{{ commande.code }}</h1>
+            <p class="text-sm text-gray-500">{{ commande.date_commande|date:"d/m/Y H:i" }}</p>
+        </div>
+        <span class="text-sm font-bold px-3 py-1.5 rounded-full
+            {% if commande.statut == 'VALIDEE' %}bg-green-50 text-green-700
+            {% elif commande.statut == 'ANNULEE' %}bg-red-50 text-red-700
+            {% elif commande.statut == 'LIVREE' %}bg-blue-50 text-blue-700
+            {% else %}bg-amber-50 text-amber-700{% endif %}">
+            {{ commande.get_statut_display }}
+        </span>
+    </div>
+
+    {% if commande.statut == 'LIVREE' %}
+    <div class="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-6">
+        <h2 class="font-bold text-gray-900 mb-2">Ta commande a été livrée</h2>
+        <p class="text-sm text-gray-600 mb-4">Confirme que tu l'as bien reçue. Tu peux ajouter une photo ou une vidéo si tu veux, mais ce n'est pas obligatoire.</p>
+        <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="valider_livraison">
+            <div class="mb-3">
+                <label class="block text-xs font-semibold text-gray-500 mb-1">Photo (optionnel)</label>
+                <input type="file" name="photo_livraison" accept="image/*" class="text-sm">
+            </div>
+            <div class="mb-4">
+                <label class="block text-xs font-semibold text-gray-500 mb-1">Vidéo (optionnel)</label>
+                <input type="file" name="video_livraison" accept="video/*" class="text-sm">
+            </div>
+            <button type="submit" class="bg-blue-600 text-white font-semibold py-2.5 px-6 rounded-lg hover:bg-blue-700 transition-colors">
+                Confirmer la réception
+            </button>
+        </form>
+    </div>
+    {% endif %}
+
+    {% if commande.statut == 'VALIDEE' %}
+    <div class="bg-green-50 border border-green-200 rounded-xl p-4 mb-6 flex items-center gap-2">
+        <span class="material-symbols-outlined text-green-600">check_circle</span>
+        <span class="text-sm text-green-700 font-semibold">Réception confirmée le {{ commande.date_validation|date:"d/m/Y H:i" }}</span>
+    </div>
+    {% if commande.photo_livraison or commande.video_livraison %}
+    <div class="flex gap-3 mb-6">
+        {% if commande.photo_livraison %}<img src="{{ commande.photo_livraison.url }}" class="w-32 h-32 object-cover rounded-lg border border-gray-200">{% endif %}
+        {% if commande.video_livraison %}<video src="{{ commande.video_livraison.url }}" controls class="w-32 h-32 rounded-lg border border-gray-200"></video>{% endif %}
+    </div>
+    {% endif %}
+    {% endif %}
+
+    <div class="bg-white rounded-xl border border-gray-200 p-6 mb-4">
+        <h2 class="font-bold text-gray-900 mb-4">Articles</h2>
+        {% for ligne in commande.lignes.all %}
+        <div class="flex justify-between py-2 border-b border-gray-100 last:border-0">
+            <span class="text-sm text-gray-700">{{ ligne.produit.nom }} × {{ ligne.quantite }}</span>
+            <span class="text-sm font-semibold text-gray-900">{{ ligne.sous_total }} FCFA</span>
+        </div>
+        {% endfor %}
+        <div class="flex justify-between pt-3 mt-2 border-t border-gray-200">
+            <span class="font-bold text-gray-900">Total</span>
+            <span class="font-bold text-blue-600">{{ commande.total }} FCFA</span>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+        <h2 class="font-bold text-gray-900 mb-3">Livraison</h2>
+        <p class="text-sm text-gray-600">{{ commande.adresse_livraison }}</p>
+        {% if commande.telephone_contact %}<p class="text-sm text-gray-600">{{ commande.telephone_contact }}</p>{% endif %}
+        {% if commande.notes_client %}<p class="text-sm text-gray-400 mt-2 italic">{{ commande.notes_client }}</p>{% endif %}
+        {% if commande.livreur %}<p class="text-sm text-gray-600 mt-3">Livreur : {{ commande.livreur.username }}</p>{% endif %}
+    </div>
+</div>
+{% endblock %}

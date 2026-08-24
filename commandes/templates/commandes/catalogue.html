@@ -1,0 +1,68 @@
+{% extends 'commandes/_portail_base.html' %}
+{% block title %}Catalogue - {{ config_magasin.nom_magasin }}{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <h1 class="text-2xl font-bold text-gray-900">Catalogue</h1>
+    <p class="text-sm text-gray-500 mt-1">Choisis tes produits, renseigne ton adresse, et valide ta commande.</p>
+</div>
+
+<form method="GET" class="mb-6 flex gap-2 max-w-md">
+    <input type="text" name="q" value="{{ recherche }}" placeholder="Rechercher un produit..."
+           class="flex-1 border border-gray-300 rounded-lg p-2.5 focus:border-blue-500 outline-none">
+    <button type="submit" class="bg-white border border-gray-300 rounded-lg px-4 text-gray-600 hover:bg-gray-50 transition-colors">
+        <span class="material-symbols-outlined text-[18px]">search</span>
+    </button>
+</form>
+
+<form method="POST" action="{% url 'commandes:passer_commande' %}">
+    {% csrf_token %}
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+        {% for produit in produits %}
+        <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div class="h-36 bg-gray-100 flex items-center justify-center overflow-hidden">
+                {% if produit.image %}
+                <img src="{{ produit.image.url }}" alt="{{ produit.nom }}" loading="lazy" class="w-full h-full object-cover">
+                {% else %}
+                <span class="material-symbols-outlined text-4xl text-gray-300">inventory_2</span>
+                {% endif %}
+            </div>
+            <div class="p-4">
+                <h3 class="font-semibold text-gray-900 text-sm mb-1">{{ produit.nom }}</h3>
+                <p class="text-xs text-gray-400 mb-3">{{ produit.categorie|default:"" }}</p>
+                <div class="flex items-center justify-between">
+                    <span class="font-bold text-blue-600">{{ produit.prix_vente }} FCFA</span>
+                    <input type="hidden" name="produit" value="{{ produit.id }}">
+                    <input type="number" name="quantite" value="0" min="0" max="{{ produit.quantite_stock }}"
+                           class="w-16 border border-gray-300 rounded-lg p-1.5 text-right text-sm focus:border-blue-500 outline-none">
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <p class="col-span-full text-center text-gray-400 py-12">Aucun produit disponible pour le moment.</p>
+        {% endfor %}
+    </div>
+
+    {% if produits %}
+    <div class="bg-white rounded-xl border border-gray-200 p-6 max-w-lg">
+        <h2 class="font-bold text-gray-900 mb-4">Livraison</h2>
+        <div class="mb-4">
+            <label class="block text-xs font-semibold text-gray-500 mb-1">Adresse de livraison</label>
+            <input name="adresse_livraison" type="text" required class="w-full border border-gray-300 rounded-lg p-2.5 focus:border-blue-500 outline-none">
+        </div>
+        <div class="mb-4">
+            <label class="block text-xs font-semibold text-gray-500 mb-1">Téléphone de contact</label>
+            <input name="telephone_contact" type="text" placeholder="{{ request.user.compte_client.client.telephone }}" class="w-full border border-gray-300 rounded-lg p-2.5 focus:border-blue-500 outline-none">
+        </div>
+        <div class="mb-6">
+            <label class="block text-xs font-semibold text-gray-500 mb-1">Note (optionnel)</label>
+            <textarea name="notes_client" rows="2" class="w-full border border-gray-300 rounded-lg p-2.5 focus:border-blue-500 outline-none"></textarea>
+        </div>
+        <button type="submit" class="w-full bg-blue-600 text-white font-semibold py-2.5 rounded-lg hover:bg-blue-700 transition-colors">
+            Passer la commande
+        </button>
+    </div>
+    {% endif %}
+</form>
+{% endblock %}

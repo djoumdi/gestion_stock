@@ -5,7 +5,6 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<link rel="icon" type="image/png" sizes="32x32" href="{% static 'img/favicon-32x32.png' %}">
 <title>{% block title %}{{ config_magasin.nom_magasin }}{% endblock %}</title>
 
 <!-- Détection/application du thème AVANT tout rendu, pour éviter un flash de
@@ -252,6 +251,13 @@
             </a>
         </li>
         {% endif %}
+        {% if perms.commandes.view_commandeclient %}
+        <li class="mb-1">
+            <a class="flex items-center {% if request.resolver_match.url_name == 'liste_commandes_client' or request.resolver_match.url_name == 'staff_detail_commande' %}bg-primary-container text-on-primary-container font-bold{% else %}text-on-surface-variant hover:bg-surface-container-high{% endif %} mx-2 py-2 px-md rounded-lg transition-colors" href="{% url 'commandes:liste_commandes_client' %}">
+                <span class="material-symbols-outlined mr-2">shopping_bag</span> Commandes clients
+            </a>
+        </li>
+        {% endif %}
         {% if perms.accounts.view_historiqueaction %}
         <li class="mb-1">
             <a class="flex items-center {% if request.resolver_match.url_name == 'historique' %}bg-primary-container text-on-primary-container font-bold{% else %}text-on-surface-variant hover:bg-surface-container-high{% endif %} mx-2 py-2 px-md rounded-lg transition-colors" href="{% url 'accounts:historique' %}">
@@ -299,7 +305,7 @@
         {% endif %}
     </a>
     <a href="{% url 'accounts:mon_compte' %}" class="flex items-center space-x-sm border-l border-outline-variant pl-lg hover:text-primary transition-colors">
-        <span class="text-sm text-secondary capitalize font-semibold">{{ request.user.username }}</span>
+        <span class="text-sm text-secondary capitalize font-semibold">{{ request.user.username }} ({{ role_dashboard|default:'Aucun rôle' }})</span>
     </a>
 </header>
 

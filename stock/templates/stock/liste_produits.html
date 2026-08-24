@@ -10,6 +10,7 @@
         <p class="text-secondary mt-1 text-sm md:text-base">Gérez votre catalogue d'inventaire</p>
     </div>
 
+    <!-- Adaptation mobile : flex-col, w-full / md:flex-row, md:w-auto -->
     <div class="flex flex-col sm:flex-row sm:flex-wrap md:flex-nowrap gap-2 w-full md:w-auto">
         {% if perms.stock.view_mouvementstock %}
         <a href="{% url 'stock:historique_mouvements' %}" class="bg-surface-container-lowest border border-outline-variant text-on-surface font-semibold py-2 px-md rounded-lg flex items-center justify-center hover:bg-surface-container-high transition-colors shadow-sm">
@@ -87,7 +88,7 @@
                         {% endif %}
                     </td>
                     <td class="py-3 px-md font-mono text-xs text-secondary">{{ produit.reference }}</td>
-                    <td class="py-3 px-md font-semibold text-on-surface">{{ produit.nom|truncatechars:20 }}</td>
+                    <td class="py-3 px-md font-semibold text-on-surface">{{ produit.nom }}</td>
                     <td class="py-3 px-md text-on-surface-variant">{{ produit.marque|default:"—" }}</td>
                     <td class="py-3 px-md text-on-surface-variant">{{ produit.categorie|default:"—" }}</td>
                     <td class="py-3 px-md text-right font-mono text-on-surface">{{ produit.prix_vente }} FCFA</td>

@@ -31,4 +31,7 @@ def parametres(request):
         messages.success(request, "Paramètres enregistrés.")
         return redirect('parametres:parametres')
 
-    return render(request, 'parametres/parametres.html', {'config': config})
+    return render(request, 'parametres/parametres.html', {
+        'config': config,
+        'taux_tva_brut': str(config.taux_tva),
+    })

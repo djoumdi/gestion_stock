@@ -1,51 +1,28 @@
 <!-- templates/historique.html -->
 {% extends 'base.html' %}
 
-{% block title %}Historique - {{ config_magasin.nom_magasin }}{% endblock %}
+{% block title %}Historique des actions - {{ config_magasin.nom_magasin }}{% endblock %}
 
 {% block content %}
 <div class="mb-lg">
-    <h2 class="text-3xl font-bold text-on-surface">Historique</h2>
-    <p class="text-sm text-secondary mt-1">Journal des 200 dernières connexions et actions effectuées sur le système</p>
-</div>
-
-<div class="flex gap-2 mb-lg">
-    <a href="{% url 'accounts:historique' %}" class="text-sm font-semibold px-3 py-1.5 rounded-full transition-colors {% if not type_selectionne %}bg-primary-container text-on-primary-container{% else %}bg-surface-container-lowest border border-outline-variant text-on-surface-variant hover:bg-surface-container-high{% endif %}">
-        Tout
-    </a>
-    <a href="{% url 'accounts:historique' %}?type=connexion" class="text-sm font-semibold px-3 py-1.5 rounded-full transition-colors {% if type_selectionne == 'connexion' %}bg-primary-container text-on-primary-container{% else %}bg-surface-container-lowest border border-outline-variant text-on-surface-variant hover:bg-surface-container-high{% endif %}">
-        Connexions
-    </a>
-    <a href="{% url 'accounts:historique' %}?type=action" class="text-sm font-semibold px-3 py-1.5 rounded-full transition-colors {% if type_selectionne == 'action' %}bg-primary-container text-on-primary-container{% else %}bg-surface-container-lowest border border-outline-variant text-on-surface-variant hover:bg-surface-container-high{% endif %}">
-        Actions
-    </a>
+    <h2 class="text-3xl font-bold text-on-surface">Historique des actions</h2>
+    <p class="text-sm text-secondary mt-1">Journal des 200 dernières actions effectuées sur le système</p>
 </div>
 
 <div class="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant overflow-hidden max-w-3xl">
     {% for a in actions %}
-    {% if a.lien %}<a href="{{ a.lien }}" class="flex items-start gap-3 px-lg py-md border-b border-outline-variant last:border-0 hover:bg-surface-container-low transition-colors">
-    {% else %}<div class="flex items-start gap-3 px-lg py-md border-b border-outline-variant last:border-0">
-    {% endif %}
-        {% if a.type_action == 'connexion' %}
-        <span class="material-symbols-outlined mt-0.5 {% if 'échouée' in a.action %}text-error{% else %}text-[#0d9488]{% endif %}">
-            {% if 'échouée' in a.action %}block{% else %}login{% endif %}
-        </span>
-        {% else %}
+    <a href="{{ a.lien|default:'#' }}" class="flex items-start gap-3 px-lg py-md border-b border-outline-variant last:border-0 hover:bg-surface-container-low transition-colors">
         <span class="material-symbols-outlined text-primary mt-0.5">history</span>
-        {% endif %}
         <div>
             <p class="text-sm text-on-surface">
                 <span class="font-semibold">{{ a.utilisateur|default:"Utilisateur supprimé" }}</span>
                 {{ a.action }}
             </p>
-            <p class="text-xs text-secondary mt-1">
-                {{ a.date|date:"d/m/Y H:i" }}
-                {% if a.adresse_ip %}· {{ a.adresse_ip }}{% endif %}
-            </p>
+            <p class="text-xs text-secondary mt-1">{{ a.date|date:"d/m/Y H:i" }}</p>
         </div>
-    {% if a.lien %}</a>{% else %}</div>{% endif %}
+    </a>
     {% empty %}
-    <p class="text-center text-secondary py-8">Aucun évènement enregistré pour le moment</p>
+    <p class="text-center text-secondary py-8">Aucune action enregistrée pour le moment</p>
     {% endfor %}
 </div>
 {% endblock %}

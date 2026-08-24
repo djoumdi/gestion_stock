@@ -292,12 +292,6 @@ def changer_statut_devis(request, pk):
     if request.method == 'POST' and devis.statut in (Devis.EN_ATTENTE,):
         action = request.POST.get('action')
         if action == 'accepter':
-            # On bloque l'acceptation d'un devis dont la date de validité est
-            # dépassée — mieux vaut empêcher le problème ici, à la source,
-            # plutôt que de compter uniquement sur le blocage à la conversion.
-            if devis.date_depassee:
-                messages.error(request, f"{devis.code} a dépassé sa date de validité, il ne peut plus être accepté tel quel. Émettez un nouveau devis.")
-                return redirect('ventes:detail_devis', pk=devis.pk)
             devis.statut = Devis.ACCEPTE
             devis.save()
             enregistrer_action(request.user, f"a marqué le devis {devis.code} comme accepté")

@@ -60,31 +60,16 @@ class Devis(models.Model):
         return sum(ligne.sous_total for ligne in self.lignes.all())
 
     @property
-    def date_depassee(self):
-        """Vérité brute, indépendante du statut : la date de validité est-elle
-        dépassée ? Contrairement à est_expire (qui sert juste à l'affichage du
-        badge et ne concerne que les devis encore EN_ATTENTE), celle-ci sert
-        aux vérifications métier (voir est_convertible) — un devis ACCEPTÉ
-        mais dont la date est passée doit rester bloqué à la conversion."""
-        from django.utils import timezone
-        return bool(self.date_validite) and self.date_validite < timezone.localdate()
-
-    @property
     def est_expire(self):
-        # Badge "Expiré" : uniquement pertinent tant que le devis est encore
-        # EN_ATTENTE d'une réponse — un devis déjà accepté/refusé/converti
-        # affiche son propre statut plutôt que "Expiré".
-        return self.date_depassee and self.statut == self.EN_ATTENTE
+        from django.utils import timezone
+        return bool(self.date_validite) and self.date_validite < timezone.localdate() and self.statut == self.EN_ATTENTE
 
     @property
     def est_convertible(self):
         # Seul un devis ACCEPTÉ par le client peut devenir une vente — c'est
         # l'acceptation du client qui déclenche la conversion, jamais le simple
         # fait d'être "en attente". Voir convertir_devis() dans views.py.
-        # Un devis expiré ne doit jamais être convertible, même s'il a été
-        # accepté avant sa date de péremption : les prix ont pu changer entre
-        # temps, il faut le refaire plutôt que de vendre sur un prix figé obsolète.
-        return self.statut == self.ACCEPTE and not self.date_depassee
+        return self.statut == self.ACCEPTE
 
 
 class LigneDevis(models.Model):

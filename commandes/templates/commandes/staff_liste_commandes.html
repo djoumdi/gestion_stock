@@ -1,0 +1,49 @@
+<!-- commandes/templates/commandes/staff_liste_commandes.html -->
+{% extends 'base.html' %}
+
+{% block title %}Commandes clients - {{ config_magasin.nom_magasin }}{% endblock %}
+
+{% block content %}
+<div class="mb-xl">
+    <h2 class="text-3xl font-bold text-on-surface">Commandes clients</h2>
+    <p class="text-secondary mt-1">Commandes passées depuis le portail, à confirmer et assigner</p>
+</div>
+
+<div class="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-surface-container-low border-b border-outline-variant">
+                    <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider">N°</th>
+                    <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider">Client</th>
+                    <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider">Livreur</th>
+                    <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider">Statut</th>
+                    <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider">Date</th>
+                    <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider text-right">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for commande in commandes %}
+                <tr onclick="window.location='{% url 'commandes:staff_detail_commande' commande.pk %}'" class="cursor-pointer border-b border-outline-variant hover:bg-surface-container-low transition-colors">
+                    <td class="py-3 px-md font-mono text-secondary">{{ commande.code }}</td>
+                    <td class="py-3 px-md font-semibold text-on-surface">{{ commande.client.nom }}</td>
+                    <td class="py-3 px-md text-on-surface-variant">{{ commande.livreur.username|default:"—" }}</td>
+                    <td class="py-3 px-md">
+                        <span class="text-xs font-bold px-2 py-1 rounded-full
+                            {% if commande.statut == 'EN_ATTENTE' %}bg-[#FEF3C7] text-[#92400E]
+                            {% elif commande.statut == 'ANNULEE' %}bg-[#FEE2E2] text-[#991B1B]
+                            {% else %}bg-[#DBEAFE] text-[#1D4ED8]{% endif %}">
+                            {{ commande.get_statut_display }}
+                        </span>
+                    </td>
+                    <td class="py-3 px-md text-on-surface-variant">{{ commande.date_commande|date:"d/m/Y H:i" }}</td>
+                    <td class="py-3 px-md text-right font-mono font-bold text-on-surface">{{ commande.total }} FCFA</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="py-6 px-md text-center text-secondary">Aucune commande en attente de traitement</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

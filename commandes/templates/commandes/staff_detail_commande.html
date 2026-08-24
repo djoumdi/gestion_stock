@@ -1,0 +1,145 @@
+<!-- commandes/templates/commandes/staff_detail_commande.html -->
+{% extends 'base.html' %}
+
+{% block title %}{{ commande.code }} - {{ config_magasin.nom_magasin }}{% endblock %}
+
+{% block content %}
+<div class="mb-lg">
+    <div class="text-sm text-secondary flex items-center gap-1 mb-1">
+        <a class="hover:text-primary transition-colors" href="{% url 'commandes:liste_commandes_client' %}">Commandes clients</a>
+        <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+        <span class="text-on-surface font-semibold">{{ commande.code }}</span>
+    </div>
+    <div class="flex items-center gap-3">
+        <h2 class="text-3xl font-bold text-on-surface">{{ commande.code }}</h2>
+        <span class="text-xs font-bold px-3 py-1.5 rounded-full
+            {% if commande.statut == 'EN_ATTENTE' %}bg-[#FEF3C7] text-[#92400E]
+            {% elif commande.statut == 'ANNULEE' %}bg-[#FEE2E2] text-[#991B1B]
+            {% elif commande.statut == 'VALIDEE' %}bg-[#D1FAE5] text-[#065F46]
+            {% else %}bg-[#DBEAFE] text-[#1D4ED8]{% endif %}">
+            {{ commande.get_statut_display }}
+        </span>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-lg">
+    <div class="lg:col-span-2 space-y-lg">
+        <div class="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant overflow-hidden">
+            <div class="p-lg border-b border-outline-variant">
+                <h3 class="text-lg font-bold">Articles commandés</h3>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-surface-container-low border-b border-outline-variant">
+                            <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider">Produit</th>
+                            <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider text-right">Qté</th>
+                            <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider text-right">Prix unitaire</th>
+                            <th class="py-3 px-md text-xs font-semibold text-secondary uppercase tracking-wider text-right">Sous-total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ligne in commande.lignes.all %}
+                        <tr class="border-b border-outline-variant last:border-0">
+                            <td class="py-3 px-md font-semibold text-on-surface">{{ ligne.produit.nom }}</td>
+                            <td class="py-3 px-md text-right font-mono">{{ ligne.quantite }}</td>
+                            <td class="py-3 px-md text-right font-mono">{{ ligne.prix_unitaire }} FCFA</td>
+                            <td class="py-3 px-md text-right font-mono font-bold">{{ ligne.sous_total }} FCFA</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr class="bg-surface-container-low">
+                            <td colspan="3" class="py-3 px-md text-right font-bold">Total</td>
+                            <td class="py-3 px-md text-right font-mono font-bold text-lg">{{ commande.total }} FCFA</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        {% if commande.notes_client %}
+        <div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg shadow-sm">
+            <h3 class="text-sm font-bold mb-1">Note du client</h3>
+            <p class="text-sm text-on-surface-variant">{{ commande.notes_client }}</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="space-y-lg">
+        <div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg shadow-sm">
+            <h3 class="text-sm font-bold mb-md">Livraison</h3>
+            <div class="space-y-2 text-sm">
+                <div>
+                    <span class="text-secondary">Client</span>
+                    <p class="font-semibold">{{ commande.client.nom }}</p>
+                </div>
+                <div>
+                    <span class="text-secondary">Adresse</span>
+                    <p class="font-semibold">{{ commande.adresse_livraison }}</p>
+                </div>
+                <div>
+                    <span class="text-secondary">Téléphone</span>
+                    <p class="font-semibold">{{ commande.telephone_contact|default:"—" }}</p>
+                </div>
+                {% if commande.livreur %}
+                <div>
+                    <span class="text-secondary">Livreur assigné</span>
+                    <p class="font-semibold">{{ commande.livreur.username }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if perms.commandes.change_commandeclient %}
+        <div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg shadow-sm space-y-3">
+            <h3 class="text-sm font-bold mb-1">Actions</h3>
+
+            {% if commande.statut == 'EN_ATTENTE' %}
+            <form method="POST" onsubmit="return confirm('Confirmer cette commande ? Le stock sera décrémenté et une vente créée.');">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="confirmer">
+                <button type="submit" class="w-full flex items-center justify-center gap-2 bg-primary-container text-on-primary-container font-semibold py-2 px-md rounded-lg hover:bg-primary hover:text-white transition-colors">
+                    <span class="material-symbols-outlined text-[18px]">check_circle</span> Confirmer la commande
+                </button>
+            </form>
+            {% endif %}
+
+            {% if commande.statut == 'CONFIRMEE' or commande.statut == 'ASSIGNEE' %}
+            <form method="POST" class="flex flex-col gap-2">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="assigner_livreur">
+                <label class="text-xs font-semibold text-secondary">Assigner à un livreur</label>
+                <select name="livreur" class="w-full bg-surface border border-outline-variant rounded p-2 text-sm focus:border-primary outline-none">
+                    <option value="">-- Choisir --</option>
+                    {% for livreur in livreurs %}
+                    <option value="{{ livreur.id }}" {% if commande.livreur_id == livreur.id %}selected{% endif %}>{{ livreur.username }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="w-full flex items-center justify-center gap-2 bg-surface border border-outline-variant rounded-lg py-2 px-md text-sm font-semibold text-on-surface-variant hover:bg-surface-container-high hover:text-primary transition-colors">
+                    <span class="material-symbols-outlined text-[18px]">local_shipping</span> Assigner
+                </button>
+            </form>
+            {% endif %}
+
+            {% if commande.statut != 'LIVREE' and commande.statut != 'VALIDEE' and commande.statut != 'ANNULEE' %}
+            <form method="POST" onsubmit="return confirm('Annuler cette commande ?{% if commande.statut == 'CONFIRMEE' or commande.statut == 'ASSIGNEE' %} Le stock sera restitué.{% endif %}');">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="annuler">
+                <button type="submit" class="w-full flex items-center justify-center gap-2 bg-[#FEE2E2] text-[#991B1B] font-semibold py-2 px-md rounded-lg hover:bg-[#991B1B] hover:text-white transition-colors">
+                    <span class="material-symbols-outlined text-[18px]">cancel</span> Annuler la commande
+                </button>
+            </form>
+            {% endif %}
+
+            {% if commande.statut == 'EN_LIVRAISON' or commande.statut == 'LIVREE' %}
+            <p class="text-xs text-secondary flex items-center gap-1">
+                <span class="material-symbols-outlined text-[16px]">info</span>
+                Cette étape est gérée par le livreur, puis validée par le client.
+            </p>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

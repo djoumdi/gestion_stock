@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.db.models import F, Sum
 from django.utils import timezone
@@ -15,6 +15,12 @@ def _est_dans_groupe(utilisateur, nom_groupe):
 @login_required
 def tableau_de_bord(request):
     utilisateur = request.user
+
+    # Un client du portail n'a rien à voir sur le dashboard staff — direction
+    # son catalogue, quelle que soit la page de connexion utilisée.
+    if hasattr(utilisateur, 'compte_client'):
+        return redirect('commandes:catalogue')
+
     aujourdhui = timezone.localdate()
     debut_mois = aujourdhui.replace(day=1)
 
@@ -22,6 +28,10 @@ def tableau_de_bord(request):
     est_gestionnaire = _est_dans_groupe(utilisateur, 'Gestionnaire de stock')
     est_magasinier = _est_dans_groupe(utilisateur, 'Magasinier') and not est_admin and not est_gestionnaire
     est_caissier = _est_dans_groupe(utilisateur, 'Caissier') and not est_admin and not est_gestionnaire and not est_magasinier
+    est_livreur = _est_dans_groupe(utilisateur, 'Livreur') and not (est_admin or est_gestionnaire or est_magasinier or est_caissier)
+
+    if est_livreur:
+        return redirect('commandes:mes_livraisons')
 
     context = {'utilisateur': utilisateur}
 

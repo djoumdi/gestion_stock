@@ -1,0 +1,54 @@
+<!-- commandes/templates/commandes/mes_livraisons.html -->
+{% extends 'base.html' %}
+
+{% block title %}Mes livraisons - {{ config_magasin.nom_magasin }}{% endblock %}
+
+{% block content %}
+<div class="mb-xl">
+    <h2 class="text-3xl font-bold text-on-surface">Mes livraisons</h2>
+    <p class="text-secondary mt-1">Commandes qui te sont assignées</p>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-lg">
+    {% for commande in commandes %}
+    <div class="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-sm overflow-hidden">
+        <div class="p-lg border-b border-outline-variant">
+            <div class="flex justify-between items-start mb-2">
+                <span class="font-mono text-sm text-secondary">{{ commande.code }}</span>
+                <span class="text-xs font-bold px-2 py-1 rounded-full {% if commande.statut == 'ASSIGNEE' %}bg-[#DBEAFE] text-[#1D4ED8]{% else %}bg-[#FEF3C7] text-[#92400E]{% endif %}">
+                    {{ commande.get_statut_display }}
+                </span>
+            </div>
+            <h3 class="font-bold text-on-surface">{{ commande.client.nom }}</h3>
+            <p class="text-sm text-on-surface-variant mt-1">{{ commande.adresse_livraison }}</p>
+            {% if commande.telephone_contact %}
+            <p class="text-sm text-on-surface-variant">
+                <span class="material-symbols-outlined text-[14px] align-middle">call</span> {{ commande.telephone_contact }}
+            </p>
+            {% endif %}
+        </div>
+
+        <div class="p-lg">
+            <p class="text-xs text-secondary mb-1">{{ commande.lignes.count }} article{{ commande.lignes.count|pluralize }} — <span class="font-mono font-bold text-on-surface">{{ commande.total }} FCFA</span></p>
+
+            <form method="POST" action="{% url 'commandes:changer_statut_livraison' commande.pk %}" class="mt-md">
+                {% csrf_token %}
+                {% if commande.statut == 'ASSIGNEE' %}
+                <input type="hidden" name="action" value="demarrer">
+                <button type="submit" class="w-full flex items-center justify-center gap-2 bg-primary-container text-on-primary-container font-semibold py-2 px-md rounded-lg hover:bg-primary hover:text-white transition-colors">
+                    <span class="material-symbols-outlined text-[18px]">directions_car</span> Démarrer la livraison
+                </button>
+                {% elif commande.statut == 'EN_LIVRAISON' %}
+                <input type="hidden" name="action" value="livree">
+                <button type="submit" class="w-full flex items-center justify-center gap-2 bg-[#D1FAE5] text-[#065F46] font-semibold py-2 px-md rounded-lg hover:bg-[#065F46] hover:text-white transition-colors">
+                    <span class="material-symbols-outlined text-[18px]">task_alt</span> Marquer comme livrée
+                </button>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+    {% empty %}
+    <p class="col-span-full text-center text-secondary py-8">Aucune livraison assignée pour le moment</p>
+    {% endfor %}
+</div>
+{% endblock %}

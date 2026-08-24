@@ -20,7 +20,6 @@
             <span class="material-symbols-outlined text-[18px] mr-1">picture_as_pdf</span> Télécharger le PDF
         </a>
         {% if devis.statut == 'EN_ATTENTE' and perms.ventes.change_devis %}
-        {% if not devis.date_depassee %}
         <form method="POST" action="{% url 'ventes:changer_statut_devis' devis.pk %}">
             {% csrf_token %}
             <input type="hidden" name="action" value="accepter">
@@ -28,7 +27,6 @@
                 Marquer accepté
             </button>
         </form>
-        {% endif %}
         <form method="POST" action="{% url 'ventes:changer_statut_devis' devis.pk %}">
             {% csrf_token %}
             <input type="hidden" name="action" value="refuser">
@@ -84,9 +82,6 @@
         </span>
         {% elif devis.statut == 'ACCEPTE' %}
         <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-[#DBEAFE] text-[#1D4ED8]">Accepté</span>
-        {% if devis.date_depassee %}
-        <p class="text-xs text-error mt-2">Date de validité dépassée depuis l'acceptation — conversion impossible, il faut ré-émettre un devis.</p>
-        {% endif %}
         {% elif devis.statut == 'REFUSE' %}
         <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-[#FEE2E2] text-[#991B1B]">Refusé</span>
         {% elif devis.est_expire %}

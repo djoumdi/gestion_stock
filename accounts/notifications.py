@@ -25,13 +25,9 @@ def notifier_administrateurs(message, lien='', exclure=None):
     ])
 
 
-def enregistrer_action(utilisateur, action, lien='', type_action=HistoriqueAction.ACTION, adresse_ip=None):
-    """Trace une action (ou une connexion) dans l'historique/audit log.
-    Ne bloque jamais le flux appelant en cas d'erreur."""
+def enregistrer_action(utilisateur, action, lien=''):
+    """Trace une action dans l'historique/audit log. Ne bloque jamais le flux appelant en cas d'erreur."""
     try:
-        HistoriqueAction.objects.create(
-            utilisateur=utilisateur, action=action, lien=lien,
-            type_action=type_action, adresse_ip=adresse_ip,
-        )
+        HistoriqueAction.objects.create(utilisateur=utilisateur, action=action, lien=lien)
     except Exception:
         pass
