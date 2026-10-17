@@ -1,4 +1,4 @@
-from django.db import migrations
+﻿from django.db import migrations
 from ._permissions_utils import forcer_creation_permissions
 
 
@@ -15,8 +15,8 @@ def ajouter_role_livreur(apps, schema_editor):
     livreur, _ = Group.objects.get_or_create(name='Livreur')
     livreur.permissions.set(Permission.objects.filter(codename__in=CODENAMES_LIVREUR))
 
-    # Gestionnaire de stock et Caissier peuvent réceptionner/confirmer une
-    # commande passée depuis le portail client et l'assigner à un livreur.
+    # Gestionnaire de stock et Caissier peuvent rÃ©ceptionner/confirmer une
+    # commande passÃ©e depuis le portail client et l'assigner Ã  un livreur.
     for nom_groupe in ['Gestionnaire de stock', 'Caissier']:
         groupe = Group.objects.filter(name=nom_groupe).first()
         if groupe:
@@ -44,7 +44,7 @@ def retirer_role_livreur(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('accounts', '0016_alter_preferenceutilisateur_id'),
+        ('accounts', '0018_permission_reception_magasinier_admin'),
         ('commandes', '0001_initial'),
     ]
 

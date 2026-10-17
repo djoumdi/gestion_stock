@@ -18,10 +18,20 @@ class Notification(models.Model):
 
 
 class HistoriqueAction(models.Model):
-    """Journal d'audit : trace qui a fait quoi et quand sur les actions clés du système."""
+    """Journal d'audit : trace qui a fait quoi et quand sur les actions clés du système,
+    ET qui s'est connecté/déconnecté (voir accounts/signals.py)."""
+    ACTION = 'action'
+    CONNEXION = 'connexion'
+    TYPE_CHOICES = [
+        (ACTION, 'Action'),
+        (CONNEXION, 'Connexion'),
+    ]
+
     utilisateur = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='actions_historique')
+    type_action = models.CharField(max_length=10, choices=TYPE_CHOICES, default=ACTION)
     action = models.CharField(max_length=255)
     lien = models.CharField(max_length=255, blank=True)
+    adresse_ip = models.GenericIPAddressField(null=True, blank=True)
     date = models.DateTimeField(auto_now_add=True)
 
     class Meta:

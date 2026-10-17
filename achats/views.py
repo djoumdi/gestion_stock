@@ -16,7 +16,9 @@ from accounts.notifications import notifier_utilisateur, notifier_administrateur
 @login_required
 @permission_required('achats.view_achat', raise_exception=True)
 def liste_achats(request):
-    achats_qs = Achat.objects.select_related('fournisseur', 'cree_par').order_by('-date_achat')
+    achats_qs = (Achat.objects.select_related('fournisseur', 'cree_par')
+                  .prefetch_related('lignes')
+                  .order_by('-date_achat'))
     paginator = Paginator(achats_qs, 30)
     achats = paginator.get_page(request.GET.get('page'))
     return render(request, 'achats/liste_achats.html', {'achats': achats})
@@ -126,7 +128,7 @@ def bon_commande_pdf_public(request, token):
 
 
 @login_required
-@permission_required('achats.change_achat', raise_exception=True)
+@permission_required('achats.receptionner_achat', raise_exception=True)
 def valider_reception(request, pk):
     """Valide la réception de la commande : c'est SEULEMENT à ce moment que le stock bouge."""
     achat = get_object_or_404(Achat, pk=pk)
@@ -171,6 +173,14 @@ def modifier_statut_achat(request, pk):
         STATUTS_VALIDES = [Achat.EN_ATTENTE, Achat.COMMANDE, Achat.RECU, Achat.ANNULE]
 
         if nouveau_statut in STATUTS_VALIDES and nouveau_statut != achat.statut:
+            # Passer une commande à "Reçu" DEPUIS CE RACCOURCI revient exactement
+            # à réceptionner la marchandise (le stock bouge, voir plus bas) :
+            # ça exige donc la même permission dédiée que valider_reception,
+            # pas seulement change_achat — sinon le Gestionnaire de stock
+            # pourrait réceptionner par cette porte dérobée.
+            if nouveau_statut == Achat.RECU and not request.user.has_perm('achats.receptionner_achat'):
+                return JsonResponse({'status': 'error', 'message': "Vous n'avez pas la permission de réceptionner une commande."}, status=403)
+
             with transaction.atomic():
                 if nouveau_statut == Achat.RECU and achat.statut != Achat.RECU:
                     for ligne in achat.lignes.select_related('produit'):

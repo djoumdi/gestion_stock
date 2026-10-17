@@ -27,6 +27,16 @@ class Achat(models.Model):
     # pour la même logique côté ventes.
     token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
 
+    class Meta:
+        # Permission dédiée à la RÉCEPTION physique de la marchandise, bien
+        # distincte de "change_achat" (modifier une commande : fournisseur,
+        # notes, statut avant livraison...). Le Gestionnaire de stock gère les
+        # commandes ; seul le Magasinier réceptionne réellement — voir
+        # accounts/migrations pour l'attribution de cette permission par rôle.
+        permissions = [
+            ('receptionner_achat', 'Peut réceptionner une commande (mise à jour du stock)'),
+        ]
+
     @property
     def code(self):
         return f"ACH-{self.pk:06d}" if self.pk else "ACH-EN COURS"

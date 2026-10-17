@@ -12,7 +12,6 @@ urlpatterns = [
     path('inventaires/', views.liste_inventaires, name='liste_inventaires'),
     path('inventaires/nouveau/', views.nouvel_inventaire, name='nouvel_inventaire'),
     path('inventaires/<int:pk>/', views.detail_inventaire, name='detail_inventaire'),
-    path('inventaires/<int:pk>/exporter/', views.exporter_inventaire, name='exporter_inventaire'),
     path('mouvements/', views.historique_mouvements, name='historique_mouvements'),
     path('mouvements/nouveau/', views.nouveau_mouvement, name='nouveau_mouvement'),
     path('<int:pk>/', views.detail_produit, name='detail_produit'),

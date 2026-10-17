@@ -67,16 +67,6 @@ class Produit(models.Model):
             return round((self.marge / self.prix_achat) * 100, 1)
         return None
 
-    @property
-    def prix_achat_brut(self):
-        """Chaîne Python brute (jamais localisée) — pour un data-* ou value=
-        de <input type="number">. Voir la note dans stock/views.py."""
-        return str(self.prix_achat)
-
-    @property
-    def prix_vente_brut(self):
-        return str(self.prix_vente)
-
 
 class MouvementStock(models.Model):
     ENTREE = 'entree'
@@ -135,12 +125,6 @@ class LigneInventaire(models.Model):
         if self.quantite_physique is None:
             return None
         return self.quantite_physique - self.quantite_theorique
-
-    @property
-    def quantite_physique_brute(self):
-        """Chaîne Python brute (jamais localisée) pour l'attribut value= d'un
-        <input type="number"> — voir la note dans detail_produit view."""
-        return str(self.quantite_physique) if self.quantite_physique is not None else ''
 
     def __str__(self):
         return f"{self.produit.nom} (théorique {self.quantite_theorique})"

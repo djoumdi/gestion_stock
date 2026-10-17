@@ -9,7 +9,7 @@ from accounts.notifications import enregistrer_action
 @login_required
 @permission_required('clients.view_client', raise_exception=True)
 def liste_clients(request):
-    clients_qs = Client.objects.prefetch_related('ventes').order_by('nom')
+    clients_qs = Client.objects.prefetch_related('ventes__lignes').order_by('nom')
     paginator = Paginator(clients_qs, 30)
     clients = paginator.get_page(request.GET.get('page'))
 

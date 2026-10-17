@@ -1,5 +1,6 @@
 <!-- parametres/templates/parametres/parametres.html -->
 {% extends 'base.html' %}
+{% load l10n %}
 
 {% block title %}Paramètres - {{ config_magasin.nom_magasin }}{% endblock %}
 
@@ -67,7 +68,7 @@
             </div>
             <div>
                 <label class="block text-xs font-semibold text-secondary mb-1">Taux de TVA (%)</label>
-                <input name="taux_tva" type="number" step="0.01" min="0" value="{{ taux_tva_brut }}" class="w-full bg-surface border border-outline-variant rounded p-2 font-mono focus:border-primary outline-none">
+                <input name="taux_tva" type="number" step="0.01" min="0" value="{{ config.taux_tva|unlocalize }}" class="w-full bg-surface border border-outline-variant rounded p-2 font-mono focus:border-primary outline-none">
             </div>
             <div>
                 <label class="block text-xs font-semibold text-secondary mb-1">Unité de mesure par défaut</label>

@@ -14,7 +14,7 @@
         </div>
         <h2 class="text-3xl font-bold text-on-surface">{{ achat.code }}</h2>
     </div>
-    {% if achat.statut != 'RECU' and achat.statut != 'ANNULE' and perms.achats.change_achat %}
+    {% if achat.statut != 'RECU' and achat.statut != 'ANNULE' and perms.achats.receptionner_achat %}
     <form method="POST" action="{% url 'achats:valider_reception' achat.pk %}">
         {% csrf_token %}
         <button type="submit" class="bg-primary-container text-on-primary-container font-semibold py-2 px-md rounded-lg flex items-center hover:bg-primary hover:text-white transition-colors shadow-sm">

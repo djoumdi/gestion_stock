@@ -1,5 +1,6 @@
 <!-- achats/templates/achats/nouvel_achat.html -->
 {% extends 'base.html' %}
+{% load l10n %}
 
 {% block title %}Nouvel achat - {{ config_magasin.nom_magasin }}{% endblock %}
 
@@ -29,7 +30,7 @@
             <select name="produits" required class="flex-1 bg-surface border border-outline-variant rounded p-2 focus:border-primary outline-none">
                 <option value="">-- Choisir un produit --</option>
                 {% for produit in produits %}
-                <option value="{{ produit.id }}" data-prix="{{ produit.prix_achat_brut }}">{{ produit.nom }}</option>
+                <option value="{{ produit.id }}" data-prix="{{ produit.prix_achat|unlocalize }}">{{ produit.nom }}</option>
                 {% endfor %}
             </select>
             <input type="number" name="quantites" min="1" value="1" required placeholder="Qté" class="w-24 bg-surface border border-outline-variant rounded p-2 font-mono text-right focus:border-primary outline-none">

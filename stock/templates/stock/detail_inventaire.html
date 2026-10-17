@@ -15,19 +15,9 @@
         <p class="text-sm text-secondary mt-1">Créé par {{ inventaire.cree_par.username|default:"—" }} le {{ inventaire.date_creation|date:"d/m/Y H:i" }}</p>
     </div>
     {% if inventaire.statut == 'VALIDE' %}
-    <div class="flex items-center gap-3">
-        <a href="{% url 'stock:exporter_inventaire' inventaire.pk %}" class="flex items-center gap-2 bg-surface border border-outline-variant rounded-lg py-2 px-md text-sm font-semibold text-on-surface-variant hover:bg-surface-container-high hover:text-primary transition-colors">
-            <span class="material-symbols-outlined text-[18px]">download</span> Exporter (Excel)
-        </a>
-        <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-bold bg-[#D1FAE5] text-[#065F46]">Validé</span>
-    </div>
+    <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-bold bg-[#D1FAE5] text-[#065F46]">Validé</span>
     {% else %}
-    <div class="flex items-center gap-3">
-        <a href="{% url 'stock:exporter_inventaire' inventaire.pk %}" class="flex items-center gap-2 bg-surface border border-outline-variant rounded-lg py-2 px-md text-sm font-semibold text-on-surface-variant hover:bg-surface-container-high hover:text-primary transition-colors">
-            <span class="material-symbols-outlined text-[18px]">download</span> Exporter (Excel)
-        </a>
-        <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-bold bg-[#FEF3C7] text-[#92400E]">En cours</span>
-    </div>
+    <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-bold bg-[#FEF3C7] text-[#92400E]">En cours</span>
     {% endif %}
 </div>
 
@@ -51,7 +41,7 @@
                         <td class="py-3 px-md text-right font-mono text-on-surface-variant">{{ ligne.quantite_theorique }}</td>
                         <td class="py-3 px-md text-right">
                             {% if inventaire.statut == 'EN_COURS' and perms.stock.change_inventaire %}
-                            <input type="number" name="quantite_physique_{{ ligne.id }}" min="0" value="{{ ligne.quantite_physique_brute }}" class="w-24 bg-surface border border-outline-variant rounded p-1 font-mono text-right focus:border-primary outline-none">
+                            <input type="number" name="quantite_physique_{{ ligne.id }}" min="0" value="{{ ligne.quantite_physique|default_if_none:'' }}" class="w-24 bg-surface border border-outline-variant rounded p-1 font-mono text-right focus:border-primary outline-none">
                             {% else %}
                             <span class="font-mono text-on-surface">{{ ligne.quantite_physique|default:"—" }}</span>
                             {% endif %}

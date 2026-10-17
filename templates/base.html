@@ -251,13 +251,6 @@
             </a>
         </li>
         {% endif %}
-        {% if perms.commandes.view_commandeclient %}
-        <li class="mb-1">
-            <a class="flex items-center {% if request.resolver_match.url_name == 'liste_commandes_client' or request.resolver_match.url_name == 'staff_detail_commande' %}bg-primary-container text-on-primary-container font-bold{% else %}text-on-surface-variant hover:bg-surface-container-high{% endif %} mx-2 py-2 px-md rounded-lg transition-colors" href="{% url 'commandes:liste_commandes_client' %}">
-                <span class="material-symbols-outlined mr-2">shopping_bag</span> Commandes clients
-            </a>
-        </li>
-        {% endif %}
         {% if perms.accounts.view_historiqueaction %}
         <li class="mb-1">
             <a class="flex items-center {% if request.resolver_match.url_name == 'historique' %}bg-primary-container text-on-primary-container font-bold{% else %}text-on-surface-variant hover:bg-surface-container-high{% endif %} mx-2 py-2 px-md rounded-lg transition-colors" href="{% url 'accounts:historique' %}">

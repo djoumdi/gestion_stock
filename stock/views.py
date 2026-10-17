@@ -6,7 +6,7 @@ from django.db.models import ProtectedError, Q
 from django.utils import timezone
 from django.http import FileResponse
 from .models import Produit, Categorie, Marque, MouvementStock, Inventaire, LigneInventaire
-from .import_export import exporter_produits_xlsx, importer_produits_xlsx, exporter_inventaire_xlsx
+from .import_export import exporter_produits_xlsx, importer_produits_xlsx
 from fournisseurs.models import Fournisseur
 from accounts.notifications import notifier_utilisateur, notifier_administrateurs, enregistrer_action
 
@@ -172,15 +172,6 @@ def detail_produit(request, pk):
     return render(request, 'stock/detail_produit.html', {
         'produit': produit,
         'marques': Marque.objects.all(),
-        # Formatage en Python (jamais soumis à la locale, contrairement au rendu
-        # template) pour que ces valeurs restent compatibles avec un <input
-        # type="number">, qui exige un point décimal quelle que soit la langue
-        # du site (LANGUAGE_CODE = 'fr-fr' insère sinon une virgule -> champ vidé
-        # silencieusement par le navigateur).
-        'prix_vente_brut': str(produit.prix_vente),
-        'prix_achat_brut': str(produit.prix_achat),
-        'seuil_alerte_brut': str(produit.seuil_alerte),
-        'seuil_max_brut': str(produit.seuil_max) if produit.seuil_max is not None else '',
     })
 
 
@@ -414,11 +405,3 @@ def detail_inventaire(request, pk):
             return redirect('stock:detail_inventaire', pk=inventaire.pk)
 
     return render(request, 'stock/detail_inventaire.html', {'inventaire': inventaire})
-
-
-@login_required
-@permission_required('stock.view_inventaire', raise_exception=True)
-def exporter_inventaire(request, pk):
-    inventaire = get_object_or_404(Inventaire, pk=pk)
-    buffer = exporter_inventaire_xlsx(inventaire)
-    return FileResponse(buffer, as_attachment=True, filename=f'{inventaire.code}.xlsx')

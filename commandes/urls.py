@@ -1,9 +1,11 @@
 from django.urls import path
+from django.views.generic import RedirectView
 from . import views
 
 app_name = 'commandes'
 
 urlpatterns = [
+    path('', RedirectView.as_view(pattern_name='commandes:catalogue', permanent=False), name='accueil'),
     # Portail client
     path('inscription/', views.inscription, name='inscription'),
     path('catalogue/', views.catalogue, name='catalogue'),

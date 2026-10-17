@@ -19,7 +19,9 @@ def liste_ventes(request):
         name__in=['Administrateur']
     ).exists()
 
-    ventes_qs = Vente.objects.select_related('client', 'vendeur').order_by('-date_vente')
+    ventes_qs = (Vente.objects.select_related('client', 'vendeur')
+                  .prefetch_related('lignes')
+                  .order_by('-date_vente'))
     if not peut_tout_voir:
         ventes_qs = ventes_qs.filter(vendeur=request.user)
 
@@ -201,7 +203,7 @@ def liste_devis(request):
     else:
         devis_qs = Devis.objects.filter(vendeur=request.user)
 
-    return render(request, 'ventes/liste_devis.html', {'liste_devis': devis_qs.select_related('client')})
+    return render(request, 'ventes/liste_devis.html', {'liste_devis': devis_qs.select_related('client').prefetch_related('lignes')})
 
 
 @login_required
@@ -292,6 +294,12 @@ def changer_statut_devis(request, pk):
     if request.method == 'POST' and devis.statut in (Devis.EN_ATTENTE,):
         action = request.POST.get('action')
         if action == 'accepter':
+            # On bloque l'acceptation d'un devis dont la date de validité est
+            # dépassée — mieux vaut empêcher le problème ici, à la source,
+            # plutôt que de compter uniquement sur le blocage à la conversion.
+            if devis.date_depassee:
+                messages.error(request, f"{devis.code} a dépassé sa date de validité, il ne peut plus être accepté tel quel. Émettez un nouveau devis.")
+                return redirect('ventes:detail_devis', pk=devis.pk)
             devis.statut = Devis.ACCEPTE
             devis.save()
             enregistrer_action(request.user, f"a marqué le devis {devis.code} comme accepté")
