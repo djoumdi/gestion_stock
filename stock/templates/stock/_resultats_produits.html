@@ -1,0 +1,7 @@
+<!-- stock/_resultats_produits.html : réponse HTMX uniquement -->
+{% include 'stock/_tableau_produits.html' %}
+
+<div id="filtre-categories" hx-swap-oob="true" class="flex flex-wrap gap-2 mb-lg">
+    {% include 'stock/_boutons_categories.html' %}
+</div>
+<input type="hidden" id="categorie-courante" name="categorie" value="{{ categorie_selectionnee|default:'' }}" hx-swap-oob="true">

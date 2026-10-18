@@ -59,5 +59,10 @@ class PreferenceUtilisateur(models.Model):
     utilisateur = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='preferences')
     theme = models.CharField(max_length=10, choices=THEME_CHOICES, default=AUTO)
 
+    def save(self, *args, **kwargs):
+        from django.core.cache import cache
+        super().save(*args, **kwargs)
+        cache.delete(f'theme_utilisateur_{self.utilisateur_id}')
+
     def __str__(self):
         return f"Préférences de {self.utilisateur}"

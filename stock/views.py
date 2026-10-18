@@ -29,12 +29,17 @@ def liste_produits(request):
     paginator = Paginator(produits_qs, 30)
     produits = paginator.get_page(request.GET.get('page'))
     categories = Categorie.objects.all().order_by('nom')
-    return render(request, 'stock/liste_produits.html', {
+    contexte = {
         'produits': produits,
         'categories': categories,
         'categorie_selectionnee': categorie_id,
         'recherche': recherche,
-    })
+    }
+    # Requête HTMX (recherche, filtre, page suivante) : on ne renvoie que la
+    # partie qui change, pas toute la page.
+    if request.headers.get('HX-Request'):
+        return render(request, 'stock/_resultats_produits.html', contexte)
+    return render(request, 'stock/liste_produits.html', contexte)
 
 
 @login_required

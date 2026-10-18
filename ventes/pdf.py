@@ -11,6 +11,7 @@ from reportlab.platypus import (
     SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer,
 )
 from reportlab.lib.enums import TA_RIGHT, TA_CENTER
+from parametres.pdf_utils import entete_magasin
 
 COULEUR_PRIMAIRE = colors.HexColor('#1D4ED8')
 COULEUR_GRISE = colors.HexColor('#6B7280')
@@ -44,7 +45,7 @@ def generer_pdf_facture(facture):
     entete = Table([
         [
             Paragraph("FACTURE", style_titre),
-            Paragraph("TechStock<br/>Magasin informatique", style_normal_droite),
+            entete_magasin(style_normal_droite),
         ]
     ], colWidths=[100 * mm, 70 * mm])
     entete.setStyle(TableStyle([
@@ -148,7 +149,7 @@ def generer_pdf_devis(devis):
     entete = Table([
         [
             Paragraph("DEVIS", style_titre),
-            Paragraph("TechStock<br/>Magasin informatique", style_normal_droite),
+            entete_magasin(style_normal_droite),
         ]
     ], colWidths=[100 * mm, 70 * mm])
     entete.setStyle(TableStyle([
@@ -252,7 +253,7 @@ def generer_pdf_avoir(retour):
     entete = Table([
         [
             Paragraph("AVOIR", style_titre),
-            Paragraph("TechStock<br/>Magasin informatique", style_normal_droite),
+            entete_magasin(style_normal_droite),
         ]
     ], colWidths=[100 * mm, 70 * mm])
     entete.setStyle(TableStyle([

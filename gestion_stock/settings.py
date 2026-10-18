@@ -47,10 +47,16 @@ INSTALLED_APPS = [
     'rapports',
     'parametres',
     'commandes',
+    # API
+    'rest_framework',
+    'rest_framework_simplejwt',
+    'corsheaders',
+    'api',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -136,3 +142,34 @@ SESSION_COOKIE_AGE = 1209600
 
 # Ne pas fermer la session à la fermeture du navigateur
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+
+# =====================================================================
+# API (Django REST Framework + JWT) pour le frontend React
+# =====================================================================
+from datetime import timedelta
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 30,
+}
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True,
+    'AUTH_HEADER_TYPES': ('Bearer',),
+}
+
+# Origines autorisées à appeler l'API (le serveur de dev React de Vite par défaut).
+# En production, on met l'adresse du frontend dans la variable CORS_ORIGINS.
+CORS_ALLOWED_ORIGINS = [
+    origine.strip()
+    for origine in os.environ.get('CORS_ORIGINS', 'http://localhost:5173').split(',')
+    if origine.strip()
+]

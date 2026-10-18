@@ -13,9 +13,17 @@ def notifications(request):
 
 
 def theme_utilisateur(request):
-    """Injecte la préférence de thème du compte connecté dans tous les
-    templates, sans jamais planter si l'objet n'existe pas encore (get_or_create)."""
-    if request.user.is_authenticated:
+    """Injecte le thème du compte connecté dans tous les templates. Le thème est
+    gardé en cache par utilisateur et invalidé à chaque sauvegarde de la
+    préférence (voir PreferenceUtilisateur.save)."""
+    from django.core.cache import cache
+    if not request.user.is_authenticated:
+        return {'theme_utilisateur': 'auto'}
+
+    cle = f'theme_utilisateur_{request.user.pk}'
+    theme = cache.get(cle)
+    if theme is None:
         preference, _ = PreferenceUtilisateur.objects.get_or_create(utilisateur=request.user)
-        return {'theme_utilisateur': preference.theme}
-    return {'theme_utilisateur': 'auto'}
+        theme = preference.theme
+        cache.set(cle, theme, 3600)
+    return {'theme_utilisateur': theme}

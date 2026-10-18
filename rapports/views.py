@@ -12,6 +12,34 @@ def _est_dans_groupe(utilisateur, nom_groupe):
     return utilisateur.groups.filter(name=nom_groupe).exists()
 
 
+from django.db.models.functions import TruncDate
+
+
+def total_des_ventes(queryset_ventes):
+    """Montant total d'un ensemble de ventes en UNE seule requête."""
+    return LigneVente.objects.filter(vente__in=queryset_ventes).aggregate(
+        total=Sum(F('quantite') * F('prix_unitaire'))
+    )['total'] or 0
+
+
+def labels_des_jours(debut, fin):
+    return [(debut + timedelta(days=i)).strftime('%d/%m') for i in range((fin - debut).days + 1)]
+
+
+def totaux_par_jour(queryset, champ_date, debut, fin, expression_total):
+    """Totaux par jour sur une période, en UNE requête groupée (au lieu d'une
+    requête par jour)."""
+    lignes = (
+        queryset.filter(**{f'{champ_date}__date__range': (debut, fin)})
+        .annotate(jour=TruncDate(champ_date))
+        .order_by()
+        .values('jour')
+        .annotate(total=Sum(expression_total))
+    )
+    par_jour = {ligne['jour']: float(ligne['total'] or 0) for ligne in lignes}
+    return [par_jour.get(debut + timedelta(days=i), 0.0) for i in range((fin - debut).days + 1)]
+
+
 @login_required
 def tableau_de_bord(request):
     utilisateur = request.user
@@ -35,19 +63,17 @@ def tableau_de_bord(request):
         mes_ventes_jour = Vente.objects.filter(vendeur=utilisateur, date_vente__date=aujourdhui)
         mes_ventes_mois = Vente.objects.filter(vendeur=utilisateur, date_vente__date__gte=debut_mois)
 
-        labels_jours = []
-        mes_totaux_jours = []
-        for i in range(6, -1, -1):
-            jour = aujourdhui - timedelta(days=i)
-            ventes_ce_jour = Vente.objects.filter(vendeur=utilisateur, date_vente__date=jour)
-            mes_totaux_jours.append(float(sum(v.total for v in ventes_ce_jour)))
-            labels_jours.append(jour.strftime('%d/%m'))
+        debut_semaine = aujourdhui - timedelta(days=6)
+        labels_jours = labels_des_jours(debut_semaine, aujourdhui)
+        mes_totaux_jours = totaux_par_jour(
+            Vente.objects.filter(vendeur=utilisateur), 'date_vente', debut_semaine, aujourdhui,
+            F('lignes__quantite') * F('lignes__prix_unitaire'))
 
         context.update({
             'role_dashboard': 'vendeur',
-            'mes_ventes_jour_montant': sum(v.total for v in mes_ventes_jour),
+            'mes_ventes_jour_montant': total_des_ventes(mes_ventes_jour),
             'mes_ventes_jour_nombre': mes_ventes_jour.count(),
-            'mes_ventes_mois_montant': sum(v.total for v in mes_ventes_mois),
+            'mes_ventes_mois_montant': total_des_ventes(mes_ventes_mois),
             'mes_ventes_mois_nombre': mes_ventes_mois.count(),
             'mes_dernieres_ventes': Vente.objects.filter(vendeur=utilisateur).order_by('-date_vente')[:8],
             'produits_en_rupture': Produit.objects.filter(quantite_stock=0).order_by('nom')[:8],
@@ -62,15 +88,19 @@ def tableau_de_bord(request):
             statut__in=[Achat.EN_ATTENTE, Achat.COMMANDE]
         ).select_related('fournisseur').order_by('-date_achat')
 
-        labels_jours = []
-        entrees_jours = []
-        sorties_jours = []
-        for i in range(6, -1, -1):
-            jour = aujourdhui - timedelta(days=i)
-            mouvements_jour = MouvementStock.objects.filter(date__date=jour)
-            entrees_jours.append(mouvements_jour.filter(type_mouvement=MouvementStock.ENTREE).aggregate(q=Sum('quantite'))['q'] or 0)
-            sorties_jours.append(mouvements_jour.filter(type_mouvement=MouvementStock.SORTIE).aggregate(q=Sum('quantite'))['q'] or 0)
-            labels_jours.append(jour.strftime('%d/%m'))
+        debut_semaine = aujourdhui - timedelta(days=6)
+        labels_jours = labels_des_jours(debut_semaine, aujourdhui)
+        mouvements_semaine = (
+            MouvementStock.objects.filter(date__date__range=(debut_semaine, aujourdhui))
+            .annotate(jour=TruncDate('date'))
+            .order_by()
+            .values('jour', 'type_mouvement')
+            .annotate(q=Sum('quantite'))
+        )
+        par_jour_type = {(m['jour'], m['type_mouvement']): m['q'] or 0 for m in mouvements_semaine}
+        jours = [debut_semaine + timedelta(days=i) for i in range(7)]
+        entrees_jours = [par_jour_type.get((j, MouvementStock.ENTREE), 0) for j in jours]
+        sorties_jours = [par_jour_type.get((j, MouvementStock.SORTIE), 0) for j in jours]
 
         context.update({
             'role_dashboard': 'magasinier',
@@ -86,7 +116,7 @@ def tableau_de_bord(request):
 
     # --- Vue Gestionnaire de stock : centrée sur le stock et les achats ---
     if est_gestionnaire:
-        produits_en_alerte = [p for p in Produit.objects.all() if p.en_alerte]
+        produits_en_alerte = Produit.objects.filter(quantite_stock__lte=F('seuil_alerte'))
         achats_en_attente = Achat.objects.filter(
             statut__in=[Achat.EN_ATTENTE, Achat.COMMANDE]
         ).select_related('fournisseur').order_by('-date_achat')
@@ -95,15 +125,11 @@ def tableau_de_bord(request):
             valeur=Sum(F('quantite_stock') * F('prix_vente'))
         )['valeur'] or 0
 
-        labels_jours = []
-        achats_totaux_jours = []
-        for i in range(6, -1, -1):
-            jour = aujourdhui - timedelta(days=i)
-            total_jour = Achat.objects.filter(date_achat__date=jour).aggregate(
-                total=Sum(F('lignes__quantite') * F('lignes__prix_unitaire'))
-            )['total'] or 0
-            achats_totaux_jours.append(float(total_jour))
-            labels_jours.append(jour.strftime('%d/%m'))
+        debut_semaine = aujourdhui - timedelta(days=6)
+        labels_jours = labels_des_jours(debut_semaine, aujourdhui)
+        achats_totaux_jours = totaux_par_jour(
+            Achat.objects.all(), 'date_achat', debut_semaine, aujourdhui,
+            F('lignes__quantite') * F('lignes__prix_unitaire'))
 
         context.update({
             'role_dashboard': 'gestionnaire',
@@ -119,23 +145,20 @@ def tableau_de_bord(request):
 
     # --- Vue Administrateur : vue d'ensemble complète du magasin ---
     ventes_du_jour = Vente.objects.filter(date_vente__date=aujourdhui)
-    total_ventes_jour = sum(v.total for v in ventes_du_jour)
+    total_ventes_jour = total_des_ventes(ventes_du_jour)
 
     valeur_stock = Produit.objects.aggregate(
         valeur=Sum(F('quantite_stock') * F('prix_vente'))
     )['valeur'] or 0
 
-    produits_en_alerte = [p for p in Produit.objects.all() if p.en_alerte]
+    produits_en_alerte = Produit.objects.filter(quantite_stock__lte=F('seuil_alerte'))
     nb_ventes_mois = Vente.objects.filter(date_vente__date__gte=debut_mois).count()
 
-    labels_jours = []
-    totaux_jours = []
-    for i in range(6, -1, -1):
-        jour = aujourdhui - timedelta(days=i)
-        ventes_ce_jour = Vente.objects.filter(date_vente__date=jour)
-        total_jour = sum(v.total for v in ventes_ce_jour)
-        labels_jours.append(jour.strftime('%d/%m'))
-        totaux_jours.append(float(total_jour))
+    debut_semaine = aujourdhui - timedelta(days=6)
+    labels_jours = labels_des_jours(debut_semaine, aujourdhui)
+    totaux_jours = totaux_par_jour(
+        Vente.objects.all(), 'date_vente', debut_semaine, aujourdhui,
+        F('lignes__quantite') * F('lignes__prix_unitaire'))
 
     # --- Ventes par catégorie (top 5) ---
     categories_stats = (

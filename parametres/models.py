@@ -20,16 +20,31 @@ class ParametresMagasin(models.Model):
         verbose_name = "Paramètres du magasin"
         verbose_name_plural = "Paramètres du magasin"
 
+    CLE_CACHE = 'parametres_magasin'
+
     def save(self, *args, **kwargs):
+        from django.core.cache import cache
         self.pk = 1  # force le singleton, quel que soit l'appelant
         super().save(*args, **kwargs)
+        # Toute modification invalide la copie en cache : la page suivante
+        # affiche immédiatement le nouveau nom, le nouveau logo ou la nouvelle TVA.
+        cache.delete(self.CLE_CACHE)
 
     def delete(self, *args, **kwargs):
         raise ValidationError("Les paramètres du magasin ne peuvent pas être supprimés.")
 
     @classmethod
     def charger(cls):
-        objet, _ = cls.objects.get_or_create(pk=1)
+        from django.core.cache import cache
+        objet = cache.get(cls.CLE_CACHE)
+        if objet is None:
+            objet, _ = cls.objects.get_or_create(pk=1)
+            try:
+                cache.set(cls.CLE_CACHE, objet, 3600)
+            except Exception:
+                # Objet non sérialisable par le backend de cache : on continue
+                # sans cache plutôt que de faire planter la page.
+                pass
         return objet
 
     def __str__(self):

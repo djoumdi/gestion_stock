@@ -14,6 +14,7 @@ urlpatterns = [
     path('ventes/', include('ventes.urls')),
     path('parametres/', include('parametres.urls')),
     path('portail/', include('commandes.urls')),
+    path('api/', include('api.urls')),
 ]
 
 if settings.DEBUG:
